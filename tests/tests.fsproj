@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\console-application.fsproj">
+      <Name>ConsoleApplication</Name>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Fixtures/Commands.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="InputTests.fs" />
+    <Compile Include="ArgsTests.fs" />
+    <Compile Include="CommandDefinitionTests.fs" />
+    <Compile Include="Tests.fs" />
+  </ItemGroup>
+
+  <Import Project="..\.paket\Paket.Restore.targets" />
+</Project>
