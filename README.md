@@ -1,7 +1,7 @@
 Console Application
 ===================
 
-[![NuGet Version and Downloads count](https://buildstats.info/nuget/ConsoleApplication)](https://www.nuget.org/packages/ConsoleApplication)
+[![NuGet Version and Downloads count](https://buildstats.info/nuget/MF.ConsoleApplication)](https://www.nuget.org/packages/MF.ConsoleApplication)
 [![Build Status](https://dev.azure.com/MortalFlesh/console-application/_apis/build/status/MortalFlesh.console-application)](https://dev.azure.com/MortalFlesh/console-application/_build/latest?definitionId=1)
 [![Build Status](https://api.travis-ci.com/MortalFlesh/console-application.svg?branch=master)](https://travis-ci.com/MortalFlesh/console-application)
 
