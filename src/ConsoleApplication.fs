@@ -57,37 +57,33 @@ module MFConsoleApplication =
     let private (<!!!>) result f =
         result <!!> fun (error, (__: CurrentCommand)) -> (error |> f, __)
 
+    type private Args = InputValue []
+
     [<RequireQualifiedAccess>]
     module private Args =
-        let private containsOption (option: Option) args =
-            match args |> Array.tryFind (Option.isMatching option) with
-            | Some _ -> true
-            | _ -> false
+        let private containsOption option (args: Args) =
+            args |> Array.tryFind (Option.isMatching option) |> Bool.fromOption
 
-        let (|Empty|_|) args =
-            if args |> Array.isEmpty then Some Empty
-            else None
+        let (|Empty|_|) (args: Args) =
+            args |> Array.isEmpty |> Bool.toOption
 
-        let (|ContainsOnlyOptions|_|) (args: InputValue []) =
-            if args |> Array.forall (fun arg -> arg.StartsWith "-" && arg <> Arguments.Separator) then Some ContainsOnlyOptions
-            else None
+        let (|ContainsOnlyOptions|_|) (args: Args) =
+            args |> Array.forall Option.isOptionOrShortcut |> Bool.toOption
 
-        let (|ContainsOption|_|) option args =
-            if args |> containsOption option then Some ContainsOption
-            else None
+        let (|ContainsOption|_|) option (args: Args) =
+            args |> containsOption option |> Bool.toOption
 
-        let getCommandName (args: InputValue []) =
+        let getCommandName (args: Args) =
             args
             |> Array.pick (function
                 | CommandName.IsCommandName commandName -> Some commandName
                 | _ -> None
             )
 
-        let (|HasOption|_|) option args =
-            args
-            |> Array.tryFind (Option.isMatching option)
+        let (|HasOption|_|) option (args: Args) =
+            args |> Array.tryFind (Option.isMatching option)
 
-        let parse (commands: Commands): InputValue [] -> Result<Input * UnfilledArgumentDefinitions, ArgsError * CurrentCommand> =
+        let parse applicationOptions (commands: Commands): Args -> Result<Input * UnfilledArgumentDefinitions, ArgsError * CurrentCommand> =
             fun args ->
                 match args |> List.ofArray with
                 | [] -> Ok (Input.empty, [])
@@ -105,7 +101,7 @@ module MFConsoleApplication =
                             |> Result.ofOption (ArgsError.CommandNotFound commandName) <!!*> currentCommand
 
                         let currentCommand: CurrentCommand = Some (commandName, command)
-                        let optionDefinitions = Commands.applicationOptions @ command.Options
+                        let optionDefinitions = command.Options @ applicationOptions
                         let definitions = (optionDefinitions, command.Arguments)
 
                         let! parsedInput =
@@ -122,7 +118,7 @@ module MFConsoleApplication =
                         return input, parsedInput.UnfilledArgumentDefinitions
                     }
 
-    let private runApplication args (ConsoleApplication application): Result<ExitCode, ConsoleApplicationError * CurrentCommand> =
+    let private runApplication (args: Args) (ConsoleApplication application): Result<ExitCode, ConsoleApplicationError * CurrentCommand> =
         let currentCommand: CurrentCommand = None
 
         match application with
@@ -175,7 +171,7 @@ module MFConsoleApplication =
 
                     let! (input, unfilledArguments) =
                         args
-                        |> Args.parse parts.Commands <!!!> ConsoleApplicationError.ArgsError
+                        |> Args.parse parts.ApplicationOptions parts.Commands <!!!> ConsoleApplicationError.ArgsError
 
                     let commandName = input |> Input.getCommandName
                     let command = parts.Commands.[commandName]

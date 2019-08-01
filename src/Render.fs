@@ -5,6 +5,20 @@ module internal Help =
     open System
     open OptionsOperators
 
+    let private createUsage decorationLevel options commandName command =
+        sprintf "%s %s %s"
+            (commandName |> CommandName.value)
+            (decorationLevel |> OptionsDefinitions.usage options)
+            (
+                match command.Arguments with
+                | [] -> ""
+                | arguments ->
+                    let formattedArguments = arguments |> List.map Argument.usage
+
+                    (sprintf "[%s]" Arguments.Separator) :: formattedArguments
+                    |> String.concat " "
+            )
+
     let private replaceHelpPlaceholders commandName help =
         // AppDomain.CurrentDomain.FriendlyName  // example
         // AppDomain.CurrentDomain.BaseDirectory // /Users/<user>/fsharp/console-application/example/bin/Debug/netcoreapp2.2/
@@ -22,9 +36,7 @@ module internal Help =
             "{{command.name}}", commandName
             "{{command.full_name}}", sprintf "%s%s.dll %s" relativePath executableFileName commandName
         ]
-        |> List.fold (fun (help: string) (placeholder, value) ->
-            help.Replace(placeholder, value)
-        ) help
+        |> List.fold String.replace help
 
     let showForCommand output decorationLevel applicationOptions commandName (command: Command) =
         let options = command.Options @ applicationOptions
@@ -34,18 +46,7 @@ module internal Help =
         ]
 
         output.SimpleOptions "Usage:" [
-            sprintf "%s %s %s"
-                (commandName |> CommandName.value)
-                (options |> OptionsDefinitions.usage decorationLevel)
-                (
-                    match command.Arguments with
-                    | [] -> ""
-                    | arguments ->
-                        let formattedArguments = arguments |> List.map Argument.usage
-
-                        (sprintf "[%s]" Arguments.Separator) :: formattedArguments
-                        |> String.concat " "
-                ), ""
+            createUsage decorationLevel options commandName command, ""
         ]
 
         match command.Arguments with
@@ -71,18 +72,8 @@ module internal Help =
         // list [--raw] [--format FORMAT] [--] [<namespace>]\n
         let options = command.Options @ applicationOptions
 
-        sprintf "<c:dark-green>%s %s %s</c>\n"
-            (commandName |> CommandName.value)
-            (options |> OptionsDefinitions.usage Complete)
-            (
-                match command.Arguments with
-                | [] -> ""
-                | arguments ->
-                    let formattedArguments = arguments |> List.map Argument.usage
-
-                    (sprintf "[%s]" Arguments.Separator) :: formattedArguments
-                    |> String.concat " "
-            )
+        createUsage Complete options commandName command
+        |> sprintf "<c:dark-green>%s</c>\n"
         |> output.Message
 
 [<RequireQualifiedAccess>]
@@ -90,7 +81,7 @@ module internal Error =
     open MF.ConsoleStyle
     open OptionsOperators
 
-    let show (ConsoleApplication application) commandInfo error =
+    let show (ConsoleApplication application) currentCommand error =
         match application with
         | Ok parts ->
             let output = parts.Output
@@ -100,7 +91,7 @@ module internal Error =
             |> ConsoleApplicationError.format
             |> printError
 
-            commandInfo
+            currentCommand
             |>! Help.showSingleLine output parts.ApplicationOptions
         | Error e ->
             e

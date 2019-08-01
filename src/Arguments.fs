@@ -88,6 +88,7 @@ module Argument =
     // Internal Argument functions
     //
     let internal name ({ ArgumentName = name }: Argument) = name
+    let internal nameValue = name >> ArgumentName.value
     let internal valueDefinition ({ Value = value }: Argument) = value
 
     let internal usage ({ ArgumentName = name; Value = definition }: Argument) =
@@ -117,9 +118,7 @@ type ArgumentValue =
 
 [<RequireQualifiedAccess>]
 module ArgumentValue =
-    /// Dumps Argument value to the string.
-    /// It should be used for debuging purposes only.
-    let dump (value: ArgumentValue) = sprintf "%A" value
+    open OptionsOperators
 
     /// Get Argument value as a single string value, it will fail with exception otherwise.
     let value argument = function
@@ -139,14 +138,12 @@ module ArgumentValue =
         | ArgumentValue.RequiredArray _ -> None
 
     /// Get Argument value as int, if it is not an int, it will fail with exception.
-    let intValue = stringValue >> Option.map int
+    let intValue argumentValue =
+        argumentValue |> stringValue <!> int
 
     /// Get Argument value as int option, if it is not an int, it will return None.
-    let tryIntValue = stringValue >> Option.bind (fun s ->
-        match s |> System.Int32.TryParse with
-        | true, int -> Some int
-        | _ -> None
-    )
+    let tryIntValue argumentValue =
+        argumentValue |> stringValue >>= String.toInt
 
     /// Get Argument value as list, even single value will be converted to list.
     let listValue = function
@@ -187,7 +184,12 @@ module internal ArgumentsDefinitions =
         }
 
     let validate (arguments: RawArgumentDefinition list) =
-        let rec checkWhetherArrayArgumentIsLast = function
+        let assertUnique arguments =
+            match arguments |> List.getDuplicatesBy RawArgumentDefinition.name with
+            | [] -> Ok ()
+            | notUnique :: _ -> Error (notUnique |> ArgumentName.value |> ArgumentDefinitionError.ArgumentAlreadyExists)
+
+        let rec assertArrayArgumentIsLast = function
             | [] -> Ok ()
             | (argument: RawArgumentDefinition) :: arguments ->
                 match argument.Value with
@@ -196,37 +198,31 @@ module internal ArgumentsDefinitions =
                     match arguments with
                     | [] -> Ok ()
                     | _ -> Error ArgumentDefinitionError.ArgumentAfterArrayArgument
-                | _ -> checkWhetherArrayArgumentIsLast arguments
+                | _ -> assertArrayArgumentIsLast arguments
 
-        let rec checkWhetherOptionalsAreAfterRequired hasOptional = function
+        let rec assertOptionalArgumentsAfterRequired hasOptional = function
             | [] -> Ok ()
             | (argument: RawArgumentDefinition) :: arguments ->
                 match argument.Value with
                 | ArgumentValueDefinition.Required _
                 | ArgumentValueDefinition.RequiredArray _ when hasOptional -> Error ArgumentDefinitionError.RequiredArgumentAfterOptional
                 | ArgumentValueDefinition.Optional _
-                | ArgumentValueDefinition.Array _ -> checkWhetherOptionalsAreAfterRequired true arguments
-                | _ -> checkWhetherOptionalsAreAfterRequired hasOptional arguments
+                | ArgumentValueDefinition.Array _ -> assertOptionalArgumentsAfterRequired true arguments
+                | _ -> assertOptionalArgumentsAfterRequired hasOptional arguments
 
         result {
-            let! _ =
-                match arguments |> List.getDuplicatesBy RawArgumentDefinition.name with
-                | [] -> Ok ()
-                | (ArgumentName (Name notUnique)) :: _ -> Error (ArgumentDefinitionError.ArgumentAlreadyExists notUnique)
-
-            let! _ = arguments |> checkWhetherArrayArgumentIsLast
-            let! _ = arguments |> checkWhetherOptionalsAreAfterRequired false
+            let! _ = arguments |> assertUnique
+            let! _ = arguments |> assertArrayArgumentIsLast
+            let! _ = arguments |> assertOptionalArgumentsAfterRequired false
 
             return arguments |> List.map fromRaw
         }
 
     let (|HasDefinedArgument|_|) argument (arguments: ArgumentsDefinitions) =
-        arguments
-        |> List.tryFind (fun { ArgumentName = (ArgumentName (Name name)) } -> name = argument)
+        arguments |> List.tryFind (Argument.nameValue >> (=) argument)
 
     let formatRequired (arguments: ArgumentsDefinitions) =
-        arguments
-        |> List.map (Argument.name >> ArgumentName.value)
+        arguments |> List.map Argument.nameValue
 
 type internal Arguments = Map<string, ArgumentValue>
 
@@ -241,11 +237,8 @@ module internal Arguments =
     let (|HasArgument|_|) name (arguments: Arguments) =
         arguments |> Map.tryFind name
 
-    let (|IsSetArgument|_|) name (arguments: Arguments) =
-        match arguments with
-        | HasArgument name value ->
-            if value |> ArgumentValue.isSet then Some value
-            else None
+    let (|IsSetArgument|_|) name = function
+        | HasArgument name value when value |> ArgumentValue.isSet -> Some value
         | _ -> None
 
     type private ParseArrayType =
@@ -336,21 +329,19 @@ module internal Arguments =
                     }
                 }
             | ConsumeSinglePartially ->
-                result {
-                    let values =
-                        match parsed with
-                        | HasArgument argumentName value -> value |> ArgumentValue.appendListValues rawArgs
-                        | _ -> rawArgs |> NotEmptyList.createPartial |> ArgumentValue.RequiredArray
+                let values =
+                    match parsed with
+                    | HasArgument argumentName value -> value |> ArgumentValue.appendListValues rawArgs
+                    | _ -> rawArgs |> NotEmptyList.createPartial |> ArgumentValue.RequiredArray
 
-                    return {
-                        ParsedArguments = parsed.Add(argumentName, values)
-                        PartialyParsedDefinition = Some definition
-                        RestOfArgs = []
-                    }
+                Ok {
+                    ParsedArguments = parsed.Add(argumentName, values)
+                    PartialyParsedDefinition = Some definition
+                    RestOfArgs = []
                 }
 
     let parse (parsed: Arguments) (definitions: ArgumentsDefinitions) (rawArguments: InputValue list): Result<Arguments * UnfilledArgumentDefinitions, ArgumentsError> =
-        debug <| sprintf "Parse arguments after -- %A\n                                                          %A" rawArguments (definitions |> List.map Argument.name)
+        debug <| sprintf "Parse arguments after -- %A\n%-*A" rawArguments 58 (* 58 is lenght of debug line *) (definitions |> List.map Argument.nameValue)
 
         let rec parseArgument rawArgs (parsed: Arguments) unfilledDefinitions =
             match rawArgs with
@@ -374,8 +365,7 @@ module internal Arguments =
                             |> parseArgument parsedResult.RestOfArgs parsedResult.ParsedArguments
                     }
 
-        definitions
-        |> parseArgument rawArguments parsed
+        definitions |> parseArgument rawArguments parsed
 
     let parseArgument arguments definedArguments (definitionsToParse: ArgumentsDefinitions) (rawArgument: InputValue) =
         match definitionsToParse with
@@ -397,10 +387,7 @@ module internal Arguments =
             | [] -> Ok arguments
             | definition :: definitions ->
                 result {
-                    let argumentName =
-                        definition
-                        |> Argument.name
-                        |> ArgumentName.value
+                    let argumentName = definition |> Argument.nameValue
 
                     let! value =
                         match definition.Value, arguments with

@@ -132,9 +132,8 @@ module Input =
         | _ -> None
 
     /// Get an OptionValue from Input.Options by option name, fail on exception when option is not defined or presented.
-    let getOption option input =
-        match input |> tryGetOption option with
-        | Some value -> value
+    let getOption option = function
+        | HasOption option value -> value
         | _ -> failwithf "The \"--%s\" option does not have a value." option
 
     /// Get option value or fail with exception when option is not defined or presented.
@@ -159,9 +158,8 @@ module Input =
         input |> getOption option |> OptionValue.tryIntValue
 
     /// Check whether Input.Options contains option name and the value is set or fail with exception when option is not defined.
-    let (|IsSetOption|_|) option input =
-        match input |> tryGetOption option with
-        | Some value when value |> OptionValue.isSet -> Some value
+    let (|IsSetOption|_|) option = function
+        | HasOption option value when value |> OptionValue.isSet -> Some value
         | _ -> None
 
     /// Checks whether option value is set or fail with exception when option is not defined.
@@ -231,9 +229,8 @@ module Input =
         | _ -> None
 
     /// Get an ArgumentValue from Input.Arguments by argument name, fail on exception when option is not defined or presented.
-    let getArgument argument input =
-        match input |> tryGetArgument argument with
-        | Some value -> value
+    let getArgument argument = function
+        | HasArgument argument value -> value
         | _ -> failwithf "The \"%s\" argument does not have a value." argument
 
     /// Get argument value or fail with exception, fail on exception when option is not defined or presented.
@@ -258,9 +255,8 @@ module Input =
         input |> getArgument argument |> ArgumentValue.listValue
 
     /// Check whether Input.Arguments contains argument name and the value is set.
-    let (|IsSetArgument|_|) argument input =
-        match input |> tryGetArgument argument with
-        | Some value when value |> ArgumentValue.isSet -> Some value
+    let (|IsSetArgument|_|) argument = function
+        | HasArgument argument value when value |> ArgumentValue.isSet -> Some value
         | _ -> None
 
     /// Checks whether argument value is set or fail with exception when argument is not defined.

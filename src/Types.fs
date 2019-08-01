@@ -86,12 +86,13 @@ type ExitCode =
     | Success
     | Error
 
+[<RequireQualifiedAccess>]
 module ExitCode =
     let code = function
         | ExitCode.Success -> 0
         | ExitCode.Error -> 1
 
-    let fromResult printError = function
+    let internal fromResult printError = function
         | Ok code -> code
         | Error (error, commandInfo) ->
             error |> printError commandInfo
@@ -259,13 +260,9 @@ module internal CommandName =
     [<Literal>]
     let NamespaceSeparator = ":"
 
-    let private invalidPrefixes = [ NamespaceSeparator; "-" ]
-    let private invalidSubStrings = [ " "; NamespaceSeparator + NamespaceSeparator; ]
-    let private invalidSufixes = [ NamespaceSeparator ]
-
     let private createName name =
         name
-        |> Name.create invalidPrefixes invalidSubStrings invalidSufixes
+        |> Name.create [ NamespaceSeparator; "-" ] [ " "; NamespaceSeparator + NamespaceSeparator ] [ NamespaceSeparator ]
         <!> CommandName
         <!!> CommandNameError.NameError
 

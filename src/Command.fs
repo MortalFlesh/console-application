@@ -98,11 +98,6 @@ type internal Commands = Map<CommandName, Command>
 module internal Commands =
     open ResultOperators
 
-    let private toList (commands: Commands) =
-        commands
-        |> Seq.map (fun kv -> (kv.Key, kv.Value) )
-        |> Seq.toList
-
     let private byNamespace namespaceValue (commands: Commands) =
         commands
         |> Map.filter (fun name _ ->
@@ -111,7 +106,7 @@ module internal Commands =
 
     let private optionDefinitions (commands: Commands) =
         commands
-        |> toList
+        |> Map.toList
         |> List.map (fun (commandName, { Options = options }) ->
             (commandName, options)
         )
@@ -132,7 +127,7 @@ module internal Commands =
 
     let format (commands: Commands) =
         commands
-        |> toList
+        |> Map.toList
         |> List.map (fun (name, command) ->
             sprintf "<c:dark-green>%s</c>" (name |> CommandName.value), command |> Command.description
         )

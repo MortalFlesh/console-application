@@ -68,9 +68,7 @@ type OptionValue =
 
 [<RequireQualifiedAccess>]
 module OptionValue =
-    /// Dumps Option value to the string.
-    /// It should be used for debuging purposes only.
-    let dump (value: OptionValue) = sprintf "%A" value
+    open OptionsOperators
 
     /// Get Option value as a single string value, it will fail with exception otherwise.
     let value option = function
@@ -92,14 +90,12 @@ module OptionValue =
         | OptionValue.ValueRequiredArray _ -> None
 
     /// Get Option value as int, if it is not an int, it will fail with exception.
-    let intValue = stringValue >> Option.map int
+    let intValue optionValue =
+        optionValue |> stringValue <!> int
 
     /// Get Option value as int option, if it is not an int, it will return None.
-    let tryIntValue = stringValue >> Option.bind (fun s ->
-        match System.Int32.TryParse s with
-        | true, int -> Some int
-        | _ -> None
-    )
+    let tryIntValue optionValue =
+        optionValue |> stringValue >>= String.toInt
 
     /// Get Option value as list, even single or none value will be converted to list.
     let listValue = function
@@ -200,6 +196,7 @@ module Option =
     // Internal options functions
     //
     let internal name ({ Name = name }: Option) = name
+    let internal nameValue = name >> OptionName.value
     let internal shortcut ({ Shortcut = shortcut }: Option) = shortcut
 
     let internal createApplicationOption name shortcut description value: Option =
@@ -226,11 +223,11 @@ module Option =
     let internal containsValue (value: InputValue) =
         value.Contains "="
 
-    let internal isMatchingOption name (value: InputValue) =
+    let internal isMatchingOption (value: InputValue) name =
         if value |> isOption then value.TrimStart '-' = (name |> OptionName.value)
         else false
 
-    let internal isMatchingShortcut (shortcut: OptionShortcut option) (value: InputValue) =
+    let internal isMatchingShortcut (value: InputValue) (shortcut: OptionShortcut option) =
         if value |> isShortcut then
             match shortcut with
             | Some (OptionShortcut shortcut) -> shortcut.Split '|' |> Seq.contains (value.TrimStart '-')
@@ -238,8 +235,8 @@ module Option =
         else false
 
     let internal isMatching (option: Option) (value: InputValue) =
-        isMatchingOption option.Name value ||
-        isMatchingShortcut option.Shortcut value
+        option.Name |> isMatchingOption value ||
+        option.Shortcut |> isMatchingShortcut value
 
     let internal usage (option: Option) =
         let shortcut =
@@ -272,15 +269,14 @@ module internal OptionsDefinitions =
     let verbose = Option.createApplicationOption OptionNames.Verbose OptionShortcuts.Verbose "Increase the verbosity of messages" OptionValueDefinition.ValueNone
 
     let (|HasDefinedOption|_|) option (options: OptionsDefinitions) =
-        options
-        |> List.tryFind (fun { Name = (OptionName (Name name)) } -> name = option)
+        options |> List.tryFind (Option.nameValue >> (=) option)
 
     let (|IsDefinedOption|_|) (options: OptionsDefinitions) (value: InputValue) =
         if value |> Option.isOption then
             let optionName = value |> OptionName.parseRaw
 
             options
-            |> List.tryFind (fun { Name = name } -> Option.isMatchingOption name optionName)
+            |> List.tryFind (Option.name >> Option.isMatchingOption optionName)
         else None
 
     let (|IsShortcut|_|) (value: InputValue) =
@@ -289,11 +285,10 @@ module internal OptionsDefinitions =
     let (|IsDefinedShortcut|_|) (options: OptionsDefinitions) (value: InputValue) =
         if value |> Option.isShortcut then
             options
-            |> List.tryFind (fun { Shortcut = shortcut } -> Option.isMatchingShortcut shortcut value)
+            |> List.tryFind (Option.shortcut >> Option.isMatchingShortcut value)
         else None
 
-    let usage decorationLevel (options: OptionsDefinitions) =
-        match decorationLevel with
+    let usage (options: OptionsDefinitions) = function
         | Minimal -> "[options]"
         | Complete ->
             options
@@ -346,17 +341,20 @@ module internal OptionsDefinitions =
         }
 
     let validate (options: RawOptionDefinition list) =
-        result {
-            let! _ =
-                match options |> List.getDuplicatesBy RawOptionDefinition.name with
-                | [] -> Ok ()
-                | (OptionName (Name notUnique)) :: _ -> Error (OptionDefinitionError.OptionAlreadyExists notUnique)
+        let assertUniqueOptions options =
+            match options |> List.getDuplicatesBy RawOptionDefinition.name with
+            | [] -> Ok ()
+            | notUnique :: _ -> Error (notUnique |> OptionName.value |> OptionDefinitionError.OptionAlreadyExists)
 
-            let! _ =
-                match options |> List.getDuplicatesBy RawOptionDefinition.shortcut with
-                | []
-                | None :: _ -> Ok ()
-                | (Some (OptionShortcut notUnique)) :: _ -> Error (OptionDefinitionError.OptionShortcutAlreadyExists notUnique)
+        let assertUniqueShortcuts options =
+            match options |> List.getDuplicatesBy RawOptionDefinition.shortcut with
+            | []
+            | None :: _ -> Ok ()
+            | (Some (OptionShortcut notUnique)) :: _ -> Error (OptionDefinitionError.OptionShortcutAlreadyExists notUnique)
+
+        result {
+            let! _ = options |> assertUniqueOptions
+            let! _ = options |> assertUniqueShortcuts
 
             return options |> List.map fromRaw
         }
@@ -368,22 +366,15 @@ module internal Options =
     open OptionsOperators
     open ResultOperators
 
-    let private hasOption (option: string) (options: Options) =
+    let (|HasOption|_|) (option: string) (options: Options) =
         options |> Map.tryFind option
 
-    let (|HasOptionName|_|) option options =
-        options |> hasOption (option |> OptionName.value)
+    let (|HasOptionName|_|) option (options: Options) =
+        options |> Map.tryFind (option |> OptionName.value)
 
-    let (|HasOption|_|) option options =
-        options |> hasOption option
-
-    let (|IsSetOption|_|) option options =
-        options
-        |> hasOption (option |> OptionName.value)
-        |> Option.bind (fun value ->
-            if value |> OptionValue.isSet then Some value
-            else None
-        )
+    let (|IsSetOption|_|) option = function
+        | HasOption option value when value |> OptionValue.isSet -> Some value
+        | _ -> None
 
     let parseValue option (parsedOptions: Options) (rawArgs: InputValue list): Result<Options * InputValue list, OptionsError> =
         let ({ Name = optionName; Value = optionValue }: Option) = option

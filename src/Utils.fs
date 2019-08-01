@@ -17,6 +17,14 @@ module internal OptionsOperators =
         |> Option.map action
         |> ignore
 
+    /// Option.bind operator alias
+    let (>>=) opt f =
+        opt |> Option.bind f
+
+    /// Option.map operator alias
+    let (<!>) opt f =
+        opt |> Option.map f
+
 [<AutoOpen>]
 module internal Utils =
     let debug message =
@@ -38,14 +46,26 @@ module internal Bool =
         if bool then Some ()
         else None
 
+    let fromOption = function
+        | Some _ -> true
+        | _ -> false
+
 [<RequireQualifiedAccess>]
 module internal String =
     open System
 
     let toUpper (string: string) = string.ToUpper()
 
-    let isNullOrEmpty (string: string) =
-        string |> String.IsNullOrWhiteSpace
+    let toInt (string: string) =
+        match string |> Int32.TryParse with
+        | true, int -> Some int
+        | _ -> None
+
+    let replace: string -> string * string -> string =
+        fun string (placeholder, replacement) ->
+            string.Replace(placeholder, replacement)
+
+    let isNullOrEmpty = String.IsNullOrWhiteSpace
 
     let (|IsNullOrEmpty|_|) string =
         string |> isNullOrEmpty |> Bool.toOption
