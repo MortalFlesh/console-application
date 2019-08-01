@@ -1,0 +1,319 @@
+module MF.ConsoleApplication.Tests.CommandDefinitions
+
+open Expecto
+open MF.ConsoleApplication
+
+type ArgumentsDefinition = {
+    Arguments: Result<RawArgumentDefinition, ArgumentDefinitionError> list
+    Argv: string []
+    Expected: Result<ExitCode, ConsoleApplicationError>
+    Description: string
+}
+
+type OptionsDefinition = {
+    Options: Result<RawOptionDefinition, OptionDefinitionError> list
+    Argv: string []
+    Expected: Result<ExitCode, ConsoleApplicationError>
+    Description: string
+}
+
+let provideArgumentDefinitions = seq {
+    yield {
+        Description = "Empty arguments"
+        Arguments = []
+        Argv = [| |]
+        Expected = Ok ExitCode.Success
+    }
+    yield {
+        Description = "Argument with empty name"
+        Arguments = [
+            Argument.required "" "Argument with empty name"
+        ]
+        Argv = [| |]
+        Expected =
+            NameError.Empty
+            |> ArgumentNameError.NameError
+            |> ArgumentDefinitionError.ArgumentNameError
+            |> CommandDefinitionError.ArgumentDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "Name with space in it"
+        Arguments = [
+            Argument.required "foo bar" "Argument with wrong name"
+        ]
+        Argv = [| |]
+        Expected =
+            NameError.Contains ("foo bar", " ")
+            |> ArgumentNameError.NameError
+            |> ArgumentDefinitionError.ArgumentNameError
+            |> CommandDefinitionError.ArgumentDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "More than one array argument defined"
+        Arguments = [
+            Argument.optionalArray "optionalArray" "First array argument" None
+            Argument.optionalArray "anotherOptionalArray" "Second array argument" None
+        ]
+        Argv = [| |]
+        Expected =
+            ArgumentDefinitionError.ArgumentAfterArrayArgument
+            |> CommandDefinitionError.ArgumentDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "Array argument is not last"
+        Arguments = [
+            Argument.optionalArray "optionalArray" "First array argument" None
+            Argument.required "argument" "Mandatory argument"
+        ]
+        Argv = [| |]
+        Expected =
+            ArgumentDefinitionError.ArgumentAfterArrayArgument
+            |> CommandDefinitionError.ArgumentDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "Optional argument before required"
+        Arguments = [
+            Argument.optional "optional" "First array argument" None
+            Argument.required "argument" "Mandatory argument"
+        ]
+        Argv = [| |]
+        Expected =
+            ArgumentDefinitionError.RequiredArgumentAfterOptional
+            |> CommandDefinitionError.ArgumentDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "Optional argument before required"
+        Arguments = [
+            Argument.required "mandatory" "Mandatory argument"
+            Argument.optional "optional" "Optional argument" None
+            Argument.requiredArray "argument" "Mandatory argument"
+        ]
+        Argv = [| |]
+        Expected =
+            ArgumentDefinitionError.RequiredArgumentAfterOptional
+            |> CommandDefinitionError.ArgumentDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "Not unique argument name"
+        Arguments = [
+            Argument.required "mandatory" "Mandatory argument"
+            Argument.required "mandatory" "Mandatory argument duplicated"
+            Argument.optional "optional" "Optional argument" None
+        ]
+        Argv = [| |]
+        Expected =
+            ArgumentDefinitionError.ArgumentAlreadyExists "mandatory"
+            |> CommandDefinitionError.ArgumentDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+}
+
+let provideOptionDefinitions = seq {
+    yield {
+        Description = "Empty options"
+        Options = []
+        Argv = [| |]
+        Expected = Ok ExitCode.Success
+    }
+    yield {
+        Description = "Option with empty name"
+        Options = [
+            Option.required "" None "With empty name" (Some "default")
+        ]
+        Argv = [| |]
+        Expected =
+            NameError.Empty
+            |> OptionNameError.NameError
+            |> OptionDefinitionError.OptionNameError
+            |> CommandDefinitionError.OptionDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "Option with starting with -"
+        Options = [
+            Option.optional "-opt" None "Starting with -" None
+        ]
+        Argv = [| |]
+        Expected =
+            NameError.StartsWith ("-opt", "-")
+            |> OptionNameError.NameError
+            |> OptionDefinitionError.OptionNameError
+            |> CommandDefinitionError.OptionDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "Option with invalid char"
+        Options = [
+            Option.optional "o p t i o n" None "Contains a space" None
+        ]
+        Argv = [| |]
+        Expected =
+            NameError.Contains ("o p t i o n", " ")
+            |> OptionNameError.NameError
+            |> OptionDefinitionError.OptionNameError
+            |> CommandDefinitionError.OptionDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "Option with ends with ="
+        Options = [
+            Option.optional "opt=" None "Ends with =" None
+        ]
+        Argv = [| |]
+        Expected =
+            NameError.Contains ("opt=", "=")
+            |> OptionNameError.NameError
+            |> OptionDefinitionError.OptionNameError
+            |> CommandDefinitionError.OptionDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "Option with empty shortcut"
+        Options = [
+            Option.optional "opt" (Some "") "Empty shortcut" None
+        ]
+        Argv = [| |]
+        Expected =
+            OptionShortcutError.Empty
+            |> OptionDefinitionError.OptionShortcutError
+            |> CommandDefinitionError.OptionDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "Option shortcut with -"
+        Options = [
+            Option.optional "opt" (Some "-o") "Shortcut with -" None
+        ]
+        Argv = [| |]
+        Expected =
+            OptionShortcutError.Contains ("-o", "-")
+            |> OptionDefinitionError.OptionShortcutError
+            |> CommandDefinitionError.OptionDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "Option shortcut with multiple options"
+        Options = [
+            Option.optional "opt" (Some "o|oo") "Shortcut with more than one option" None
+        ]
+        Argv = [| |]
+        Expected =
+            OptionShortcutError.MoreThanSingleLetter "o|oo"
+            |> OptionDefinitionError.OptionShortcutError
+            |> CommandDefinitionError.OptionDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "Option shortcut with reserved value"
+        Options = [
+            Option.optional "opt" (Some "V") "Shortcut with reserved shortcut" None
+        ]
+        Argv = [| |]
+        Expected =
+            OptionShortcutError.Reserved (ReservedShortcut ("V", "version"))
+            |> OptionDefinitionError.OptionShortcutError
+            |> CommandDefinitionError.OptionDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "More than one option with the same name"
+        Options = [
+            Option.optional "opt" (Some "o") "First" None
+            Option.optional "opt" None "Second" None
+        ]
+        Argv = [| |]
+        Expected =
+            OptionDefinitionError.OptionAlreadyExists "opt"
+            |> CommandDefinitionError.OptionDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+    yield {
+        Description = "More than one option without shortcut"
+        Options = [
+            Option.optional "opt1" None "First" None
+            Option.optional "opt2" None "Second" None
+        ]
+        Argv = [| |]
+        Expected = Ok ExitCode.Success
+    }
+    yield {
+        Description = "More than one option with the same shortcut"
+        Options = [
+            Option.optional "opt1" (Some "o") "First" None
+            Option.optional "opt2" (Some "o") "Second" None
+        ]
+        Argv = [| |]
+        Expected =
+            OptionDefinitionError.OptionShortcutAlreadyExists "o"
+            |> CommandDefinitionError.OptionDefinitionError
+            |> ConsoleApplicationError.CommandDefinitionError
+            |> Error
+    }
+}
+
+let runConsoleApplication arguments options argv =
+    let argv = [|
+        yield "test"
+        yield! argv
+    |]
+
+    consoleApplication {
+        command "test" {
+            Description = "Test command."
+            Help = None
+            Arguments = arguments
+            Options = options
+            Initialize = None
+            Interact = None
+            Execute = fun _ -> ExitCode.Success
+        }
+    }
+    |> runResult argv
+
+[<Tests>]
+let defineCommandTests =
+    testList "ConsoleApplication - define command" [
+        testCase "arguments" <| fun _ ->
+            provideArgumentDefinitions
+            |> Seq.iter (fun { Arguments = arguments; Argv = argv; Expected = expected; Description = description } ->
+                let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
+
+                let result = runConsoleApplication arguments [] argv
+                let description = sprintf "%s\nResult:\n%A\n" description result
+
+                Expect.equal result expected description
+            )
+
+        testCase "options" <| fun _ ->
+            provideOptionDefinitions
+            |> Seq.iter (fun { Options = options; Argv = argv; Expected = expected; Description = description } ->
+                let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
+
+                let result = runConsoleApplication [] options argv
+                let description = sprintf "%s\nResult:\n%A\n" description result
+
+                Expect.equal result expected description
+            )
+    ]

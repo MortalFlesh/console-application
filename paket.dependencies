@@ -1,0 +1,21 @@
+framework: netcoreapp2.2
+storage: none
+
+source https://api.nuget.org/v3/index.json
+nuget FSharp.Core
+nuget ConsoleStyle >= 1.4.1
+
+group Tests
+    storage: none
+    source https://api.nuget.org/v3/index.json
+    nuget Expecto
+    nuget YoloDev.Expecto.TestSdk
+
+// [ FAKE GROUP ]
+group Build
+    storage none
+    source https://api.nuget.org/v3/index.json
+    nuget Fake.DotNet.Cli
+    nuget Fake.IO.FileSystem
+    nuget Fake.Core.Target
+    nuget Fake.Core.UserInput
