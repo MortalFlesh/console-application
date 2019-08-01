@@ -117,10 +117,6 @@ Target.create "Tests" (fun _ ->
     DotnetCore.runOrFail "run" "tests"
 )
 
-Target.create "WatchTests" (fun _ ->
-    DotnetCore.runOrFail "watch run" "tests"
-)
-
 Target.create "Release" (fun _ ->
     match UserInput.getUserInput "Are you sure - is it tagged yet? [y|n]: " with
     | "y"
@@ -150,7 +146,7 @@ Target.create "Release" (fun _ ->
 "Clean"
     ==> "Build"
     ==> "Lint"
-    ==> "Tests" <=> "WatchTests"
+    ==> "Tests"
     ==> "Release"
 
 Target.runOrDefaultWithArguments "Build"
