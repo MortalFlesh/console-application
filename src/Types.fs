@@ -93,8 +93,8 @@ module ExitCode =
 
     let fromResult printError = function
         | Ok code -> code
-        | Error error ->
-            printError error
+        | Error (error, commandInfo) ->
+            error |> printError commandInfo
             ExitCode.Error
 
 // Input / Output

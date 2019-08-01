@@ -147,7 +147,7 @@ module internal ConsoleApplicationBuilder =
                 showHelpForCommand parts.Output parts.OptionDecorationLevel parts.ApplicationOptions
 
             let showError =
-                showError (Some parts.Output)
+                showError (ConsoleApplication definition)
 
             let commands =
                 [

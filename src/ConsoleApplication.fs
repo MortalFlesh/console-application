@@ -7,7 +7,9 @@ module MFConsoleApplication =
     open ResultOperators
 
     let consoleApplication =
-        let buildApplication = ConsoleApplicationBuilder.buildApplication Help.showForCommand Error.show
+        let showError application = Error.show application None
+        let buildApplication = ConsoleApplicationBuilder.buildApplication Help.showForCommand showError
+
         ConsoleApplicationBuilder (buildApplication)
 
     let private showApplicationInfo parts =
@@ -45,6 +47,16 @@ module MFConsoleApplication =
             | _ -> name
             |> output.Title
 
+    type private CurrentCommand = (CommandName * Command) option
+
+    /// Map error by appending a current command.
+    let private (<!!*>) result (currentCommand: CurrentCommand) =
+        result <!!> fun __ -> (__, currentCommand)
+
+    /// Map error with appended current command.
+    let private (<!!!>) result f =
+        result <!!> fun (error, (__: CurrentCommand)) -> (error |> f, __)
+
     [<RequireQualifiedAccess>]
     module private Args =
         let private containsOption (option: Option) args =
@@ -75,39 +87,44 @@ module MFConsoleApplication =
             args
             |> Array.tryFind (Option.isMatching option)
 
-        let parse commands: InputValue [] -> Result<Input * UnfilledArgumentDefinitions, ArgsError> =
+        let parse (commands: Commands): InputValue [] -> Result<Input * UnfilledArgumentDefinitions, ArgsError * CurrentCommand> =
             fun args ->
                 match args |> List.ofArray with
                 | [] -> Ok (Input.empty, [])
-                | command :: rawArgs ->
+                | rawArg :: rawArgs ->
                     result {
+                        let currentCommand: CurrentCommand = None
+
                         let! commandName =
-                            command
-                            |> CommandName.createInRuntime <!!> ArgsError.CommandNameError
+                            rawArg
+                            |> CommandName.createInRuntime <!!> ArgsError.CommandNameError <!!*> currentCommand
 
-                        let! (optionDefinitions, argumentDefinitions) =
+                        let! command =
                             commands
-                            |> Commands.definitions commandName
-                            |> Result.ofOption (ArgsError.CommandNotFound commandName)
+                            |> Map.tryFind commandName
+                            |> Result.ofOption (ArgsError.CommandNotFound commandName) <!!*> currentCommand
 
-                        let optionDefinitions = Commands.applicationOptions @ optionDefinitions
-                        let definitions = (optionDefinitions, argumentDefinitions)
+                        let currentCommand: CurrentCommand = Some (commandName, command)
+                        let optionDefinitions = Commands.applicationOptions @ command.Options
+                        let definitions = (optionDefinitions, command.Arguments)
 
                         let! parsedInput =
                             rawArgs
-                            |> Input.parse argumentDefinitions definitions ParsedInput.empty <!!> ArgsError.InputError
+                            |> Input.parse command.Arguments definitions ParsedInput.empty <!!> ArgsError.InputError <!!*> currentCommand
 
                         let input = {
-                            Arguments = parsedInput.Arguments.Add(ArgumentNames.Command, ArgumentValue.Required command)
+                            Arguments = parsedInput.Arguments.Add(ArgumentNames.Command, ArgumentValue.Required (commandName |> CommandName.value))
                             Options = optionDefinitions |> Options.prepareOptionsDefaults parsedInput.Options
-                            ArgumentDefinitions = argumentDefinitions
+                            ArgumentDefinitions = command.Arguments
                             OptionDefinitions = optionDefinitions
                         }
 
                         return input, parsedInput.UnfilledArgumentDefinitions
                     }
 
-    let runResult args (ConsoleApplication application) =
+    let private runApplication args (ConsoleApplication application): Result<ExitCode, ConsoleApplicationError * CurrentCommand> =
+        let currentCommand: CurrentCommand = None
+
         match application with
         | Ok parts ->
             result {
@@ -142,7 +159,7 @@ module MFConsoleApplication =
 
                     return!
                         match parts.Commands |> Map.tryFind commandName with
-                        | None -> Error (ArgsError.CommandNotFound commandName) <!!> ConsoleApplicationError.ArgsError
+                        | None -> Error (ArgsError.CommandNotFound commandName) <!!> ConsoleApplicationError.ArgsError <!!*> currentCommand
                         | Some command ->
                             command
                             |> Help.showForCommand output parts.OptionDecorationLevel parts.ApplicationOptions commandName
@@ -158,10 +175,11 @@ module MFConsoleApplication =
 
                     let! (input, unfilledArguments) =
                         args
-                        |> Args.parse parts.Commands <!!> ConsoleApplicationError.ArgsError
+                        |> Args.parse parts.Commands <!!!> ConsoleApplicationError.ArgsError
 
                     let commandName = input |> Input.getCommandName
                     let command = parts.Commands.[commandName]
+                    let currentCommand: CurrentCommand = Some (commandName, command)
 
                     //debug <| sprintf "Input:\n%A" input
                     // todo <later> - show input as table(s) ->
@@ -178,21 +196,25 @@ module MFConsoleApplication =
 
                         let! input =
                             input
-                            |> Input.prepareUnfilledArguments unfilledArguments <!!> (ArgsError.InputError >> ConsoleApplicationError.ArgsError)
+                            |> Input.prepareUnfilledArguments unfilledArguments <!!> (ArgsError.InputError >> ConsoleApplicationError.ArgsError) <!!*> currentCommand
 
                         return
                             (input, output)
                             |> command.Execute
                     with
                     | e ->
-                        return! Error (ConsoleApplicationError.ConsoleApplicationError e.Message)
+                        return! Error (ConsoleApplicationError.ConsoleApplicationError e.Message) <!!*> currentCommand
             }
-        | Error error -> Error error
+        | Error error -> Error (error, currentCommand)
+
+    let runResult args application =
+        application
+        |> runApplication args <!!> fst
 
     let run args application =
         application
-        |> runResult args
-        |> ExitCode.fromResult (Error.show (application |> ConsoleApplication.output))
+        |> runApplication args
+        |> ExitCode.fromResult (Error.show application)
         |> ExitCode.code
 
     let runInteractively args application =

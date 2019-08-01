@@ -179,8 +179,8 @@ module internal Commands =
                     | Ok (commandName, command) ->
                         showHelpForCommand commandName command
                         ExitCode.Success
-                    | Error e ->
-                        showError e
+                    | Error error ->
+                        showError error
                         ExitCode.Error
         }
         |> Result.orFail

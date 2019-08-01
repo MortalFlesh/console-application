@@ -67,16 +67,42 @@ module internal Help =
             output.SimpleOptions "Help" [help |> replaceHelpPlaceholders commandName, ""]
         )
 
+    let showSingleLine output applicationOptions (commandName, command) =
+        // list [--raw] [--format FORMAT] [--] [<namespace>]\n
+        let options = command.Options @ applicationOptions
+
+        sprintf "<c:dark-green>%s %s %s</c>\n"
+            (commandName |> CommandName.value)
+            (options |> OptionsDefinitions.usage Complete)
+            (
+                match command.Arguments with
+                | [] -> ""
+                | arguments ->
+                    let formattedArguments = arguments |> List.map Argument.usage
+
+                    (sprintf "[%s]" Arguments.Separator) :: formattedArguments
+                    |> String.concat " "
+            )
+        |> output.Message
+
 [<RequireQualifiedAccess>]
 module internal Error =
     open MF.ConsoleStyle
+    open OptionsOperators
 
-    let show output error =
-        let printError =
-            match output with
-            | Some output -> sprintf "%s\n" >> output.Error
-            | _ -> Console.errorf "\n%s\n"
+    let show (ConsoleApplication application) commandInfo error =
+        match application with
+        | Ok parts ->
+            let output = parts.Output
+            let printError = sprintf "%s\n" >> output.Error
 
-        error
-        |> ConsoleApplicationError.format
-        |> printError
+            error
+            |> ConsoleApplicationError.format
+            |> printError
+
+            commandInfo
+            |>! Help.showSingleLine output parts.ApplicationOptions
+        | Error e ->
+            e
+            |> ConsoleApplicationError.format
+            |> Console.errorf "\n%s\n"
