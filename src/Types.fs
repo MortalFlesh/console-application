@@ -260,11 +260,13 @@ module internal CommandName =
     [<Literal>]
     let NamespaceSeparator = ":"
 
-    let private createName name =
-        name
-        |> Name.create [ NamespaceSeparator; "-" ] [ " "; NamespaceSeparator + NamespaceSeparator ] [ NamespaceSeparator ]
-        <!> CommandName
-        <!!> CommandNameError.NameError
+    let private createName = function
+        | Regex "^([\w\.\-: ]*)$" _ as name ->
+            name
+            |> Name.create [ NamespaceSeparator; "-" ] [ " "; NamespaceSeparator + NamespaceSeparator ] [ NamespaceSeparator ]
+            <!> CommandName
+            <!!> CommandNameError.NameError
+        | invalidName -> Error (CommandNameError.Invalid invalidName)
 
     let create = function
         | ArgumentNames.Command -> Error (CommandNameError.Reserved ArgumentNames.Command)
@@ -276,7 +278,13 @@ module internal CommandName =
         | name -> name |> createName
 
     let value (CommandName (Name name)) = name
-    let namespaceValue (CommandName (Name name)) = name.Split NamespaceSeparator |> Seq.tryHead
+    let splitByNamespaces (CommandName (Name name)) = name.Split NamespaceSeparator |> Seq.toList
+    let namespaceValue = splitByNamespaces >> List.tryHead
+
+    let isMatchingPattern pattern name =
+        match name |> value with
+        | Regex pattern _ -> Some name
+        | _ -> None
 
     /// Match string as CommandName.
     /// NOTE: It does NOT check, whether such command exists.
@@ -452,13 +460,22 @@ module internal InputError =
 type ArgsError =
     | CommandNameError of CommandNameError
     | CommandNotFound of CommandName
+    | AmbigousCommandFound of CommandName * CommandName list
     | InputError of InputError
+
+module AmbigousCommandFound =
+    let create command commands =
+        ArgsError.AmbigousCommandFound (CommandName (Name command), commands |> List.map (Name >> CommandName))
 
 [<RequireQualifiedAccess>]
 module internal ArgsError =
     let format = function
         | ArgsError.CommandNameError error -> CommandNameError.format error
-        | ArgsError.CommandNotFound name -> name |> CommandName.value |> sprintf "Command by name \"%s\" is not defined. Run \"list\" to show available commands."
+        | ArgsError.CommandNotFound name -> name |> CommandName.value |> sprintf "Command \"%s\" is not defined. Run \"list\" to show available commands."
+        | ArgsError.AmbigousCommandFound (name, names) ->
+            sprintf "Command \"%s\" is ambiguous.\n\nDid you mean one of these?\n%s"
+                (name |> CommandName.value)
+                (names |> List.map (CommandName.value >> sprintf "    %s") |> String.concat "\n") // todo <later> add description to the command name
         | ArgsError.InputError error -> InputError.format error
 
 [<RequireQualifiedAccess>]
