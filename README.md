@@ -18,6 +18,8 @@ This library is inspired by [Symfony/Style](https://symfony.com/doc/current/cons
 - [Life-cycle](#life-cycle)
     - [Interaction](#interaction)
 - [Console Input](#console-input-arguments--options)
+    - [Command Name](#command-name)
+        - [Shortcut syntax](#shortcut-syntax)
     - [Arguments](#arguments)
     - [Options](#options)
 - [Console Output](#console-output)
