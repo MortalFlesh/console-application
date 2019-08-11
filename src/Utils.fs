@@ -82,6 +82,16 @@ module internal String =
         sufixes
         |> List.tryPick (fun sufix -> if string.EndsWith(sufix) then Some (string, sufix) else None)
 
+[<AutoOpen>]
+module internal Regexp =
+    open System.Text.RegularExpressions
+
+    // http://www.fssnip.net/29/title/Regular-expression-active-pattern
+    let internal (|Regex|_|) pattern input =
+        let m = Regex.Match(input, pattern)
+        if m.Success then Some (List.tail [ for g in m.Groups -> g.Value ])
+        else None
+
 [<RequireQualifiedAccess>]
 module internal List =
     let getDuplicatesBy f items =

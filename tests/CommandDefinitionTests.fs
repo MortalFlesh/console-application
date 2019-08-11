@@ -17,6 +17,13 @@ type OptionsDefinition = {
     Description: string
 }
 
+type CommandNameDefinition = {
+    CommandName: string
+    Argv: string []
+    Expected: Result<ExitCode, ConsoleApplicationError>
+    Description: string
+}
+
 let provideArgumentDefinitions = seq {
     yield {
         Description = "Empty arguments"
@@ -273,14 +280,122 @@ let provideOptionDefinitions = seq {
     }
 }
 
-let runConsoleApplication arguments options argv =
+let provideCommandName = seq {
+    yield {
+        Description = "Simple name"
+        CommandName = "simple"
+        Argv = [| "simple" |]
+        Expected = Ok ExitCode.Success
+    }
+
+    yield {
+        Description = "Name contains ."
+        CommandName = "with.dot"
+        Argv = [| "with.dot" |]
+        Expected = Ok ExitCode.Success
+    }
+
+    yield {
+        Description = "Name contains . used by shortcut"
+        CommandName = "with.dot"
+        Argv = [| "with." |]
+        Expected = Ok ExitCode.Success
+    }
+
+    yield {
+        Description = "Ambigous name contains . used by unique shortcut"
+        CommandName = "ambigous:command.foo"
+        Argv = [| "a:command.f" |]
+        Expected = Ok ExitCode.Success
+    }
+
+    yield {
+        Description = "Ambigous name contains . used by shortcut"
+        CommandName = "ambigous:command.foo"
+        Argv = [| "a:command." |]
+        Expected =
+            AmbigousCommandFound.create "a:command." [ "ambigous:command.foo"; "ambigous:command.name" ]
+            |> ConsoleApplicationError.ArgsError
+            |> Error
+    }
+
+    yield {
+        Description = "Name contains namespaces"
+        CommandName = "group:sub:command"
+        Argv = [| "group:sub:command" |]
+        Expected = Ok ExitCode.Success
+    }
+
+    yield {
+        Description = "Name contains namespaces used by shortcut"
+        CommandName = "group:sub:command"
+        Argv = [| "g:s:c" |]
+        Expected = Ok ExitCode.Success
+    }
+
+    yield {
+        Description = "Invalid name - starting with -"
+        CommandName = "-invalid"
+        Argv = [| |]
+        Expected =
+            NameError.StartsWith ("-invalid", "-")
+            |> CommandNameError.NameError
+            |> ConsoleApplicationError.CommandNameError
+            |> Error
+    }
+
+    yield {
+        Description = "Invalid name - ends with :"
+        CommandName = "invalid:"
+        Argv = [| |]
+        Expected =
+            NameError.EndsWith ("invalid:", ":")
+            |> CommandNameError.NameError
+            |> ConsoleApplicationError.CommandNameError
+            |> Error
+    }
+
+    yield {
+        Description = "Invalid name - contains space"
+        CommandName = "in valid"
+        Argv = [| |]
+        Expected =
+            NameError.Contains ("in valid", " ")
+            |> CommandNameError.NameError
+            |> ConsoleApplicationError.CommandNameError
+            |> Error
+    }
+
+    yield {
+        Description = "Invalid name - contains ::"
+        CommandName = "in::valid"
+        Argv = [| |]
+        Expected =
+            NameError.Contains ("in::valid", "::")
+            |> CommandNameError.NameError
+            |> ConsoleApplicationError.CommandNameError
+            |> Error
+    }
+
+    yield {
+        Description = "Invalid name - contains invalid character ^"
+        CommandName = "contains^"
+        Argv = [| |]
+        Expected =
+            CommandNameError.Invalid "contains^"
+            |> ConsoleApplicationError.CommandNameError
+            |> Error
+    }
+}
+
+let runConsoleApplicationWithCommandName commandNameDefinition commandNameRuntime arguments options argv =
     let argv = [|
-        yield "test"
+        yield! commandNameRuntime |> Option.toList
         yield! argv
     |]
 
     consoleApplication {
-        command "test" {
+        command commandNameDefinition {
             Description = "Test command."
             Help = None
             Arguments = arguments
@@ -289,8 +404,21 @@ let runConsoleApplication arguments options argv =
             Interact = None
             Execute = fun _ -> ExitCode.Success
         }
+
+        command "ambigous:command.name" {
+            Description = "Test command."
+            Help = None
+            Arguments = arguments
+            Options = options
+            Initialize = None
+            Interact = None
+            Execute = fun _ -> failwith "Should not be called."
+        }
     }
     |> runResult argv
+
+let runConsoleApplication =
+    runConsoleApplicationWithCommandName "test" (Some "test")
 
 [<Tests>]
 let defineCommandTests =
@@ -312,6 +440,17 @@ let defineCommandTests =
                 let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
 
                 let result = runConsoleApplication [] options argv
+                let description = sprintf "%s\nResult:\n%A\n" description result
+
+                Expect.equal result expected description
+            )
+
+        testCase "commandNames" <| fun _ ->
+            provideCommandName
+            |> Seq.iter (fun { CommandName = name; Argv = argv; Expected = expected; Description = description } ->
+                let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
+
+                let result = runConsoleApplicationWithCommandName name None [] [] argv
                 let description = sprintf "%s\nResult:\n%A\n" description result
 
                 Expect.equal result expected description

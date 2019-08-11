@@ -94,22 +94,39 @@ module internal Command =
 
 type internal Commands = Map<CommandName, Command>
 
+type internal FindResult =
+    | ExactlyOne of CommandName * Command
+    | MoreThanOne of CommandName * CommandName list
+    | NoCommand of CommandName
+
 [<RequireQualifiedAccess>]
 module internal Commands =
     open ResultOperators
 
-    let private byNamespace namespaceValue (commands: Commands) =
-        commands
-        |> Map.filter (fun name _ ->
-            name |> CommandName.namespaceValue = Some namespaceValue
-        )
-
-    let private optionDefinitions (commands: Commands) =
+    let private namesByPattern pattern (commands: Commands): CommandName list =
         commands
         |> Map.toList
-        |> List.map (fun (commandName, { Options = options }) ->
-            (commandName, options)
-        )
+        |> List.map fst
+        |> List.choose (CommandName.isMatchingPattern pattern)
+
+    let find name (commands: Commands) =
+        match commands |> Map.tryFind name with
+        | Some command -> ExactlyOne (name, command)
+        | _ ->
+            let escapeForRegex (name: string) =
+                name.Replace(".", @"\.")
+
+            let partialNamePattern =
+                name
+                |> CommandName.splitByNamespaces
+                |> List.map (escapeForRegex >> sprintf "%s.*?")
+                |> String.concat CommandName.NamespaceSeparator
+                |> sprintf "^%s$"
+
+            match commands |> namesByPattern partialNamePattern with
+            | [] -> NoCommand name
+            | [ commandName ] -> ExactlyOne (commandName, commands.[commandName])
+            | commandNames -> MoreThanOne (name, commandNames)
 
     let applicationOptions: OptionsDefinitions =
         [
@@ -119,11 +136,6 @@ module internal Commands =
             OptionsDefinitions.noInteraction
             OptionsDefinitions.verbose
         ]
-
-    let definitions command (commands: Commands) =
-        commands
-        |> Map.tryFind command
-        |> Option.map Command.definitions
 
     let format (commands: Commands) =
         commands
@@ -159,15 +171,16 @@ module internal Commands =
             Interact = None
             Execute = fun (input, output) ->
                 result {
-                    let! commandName =
+                    let! rawCommandName =
                         input
                         |> Input.getArgumentValue "command_name"
                         |> CommandName.createInRuntime <!!> ArgsError.CommandNameError
 
                     return!
-                        match commands |> Map.tryFind commandName with
-                        | Some command -> Ok (commandName, command)
-                        | _ -> Error (ArgsError.CommandNotFound commandName)
+                        match commands |> find rawCommandName with
+                        | ExactlyOne (commandName, command) -> Ok (commandName, command)
+                        | MoreThanOne (givenName, names) -> Error (ArgsError.AmbigousCommandFound (givenName, names))
+                        | NoCommand unknownName -> Error (ArgsError.CommandNotFound unknownName)
                 }
                 <!!> ConsoleApplicationError.ArgsError
                 |> function
@@ -183,6 +196,12 @@ module internal Commands =
     let helpCommandDummy =
         let ignore2 _ = ignore
         helpCommand ignore2 ignore Map.empty
+
+    let private byNamespace namespaceValue (commands: Commands) =
+        commands
+        |> Map.filter (fun name _ ->
+            name |> CommandName.namespaceValue = Some namespaceValue
+        )
 
     let listCommand applicationOptions (commands: Commands): Command =
         CommandDefinition.validate {

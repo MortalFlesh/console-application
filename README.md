@@ -227,6 +227,24 @@ Interact = Some (fun (input, output) ->
 ## Console Input (Arguments & Options)
 The most interesting part of the commands are the arguments and options that you can make available. These arguments and options allow you to pass dynamic information from the terminal to the command.
 
+### Command name
+Command name is a special type of _required_ argument, which has a reserved name (`command`) and will always be there (_if it is not passed by user, it will be a default command_).
+
+#### Shortcut Syntax
+You do not have to type out the full command names. You can just type the shortest unambiguous name to run a command. So if there are non-clashing commands, then you can run help like this:
+
+```sh
+dotnet example.dll h
+```
+
+If you have commands using `:` to namespace commands then you only need to type the shortest unambiguous text for each part. If you have created the `my:first-command` as shown above then you can run it with:
+
+```sh
+dotnet example.dll m:f Mortal Flesh
+```
+
+If you enter a short command that's ambiguous (_i.e. there are more than one command that match_), then no command will be run and some suggestions of the possible commands to choose from will be output.
+
 ### Arguments
 Arguments are the strings - separated by spaces - that come after the command name itself. They are ordered, and can be optional or required.
 It is also possible to let an argument take a list of values (_only the last argument ca be a list_).

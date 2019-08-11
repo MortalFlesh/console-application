@@ -91,14 +91,16 @@ module MFConsoleApplication =
                     result {
                         let currentCommand: CurrentCommand = None
 
-                        let! commandName =
+                        let! rawCommandName =
                             rawArg
                             |> CommandName.createInRuntime <!!> ArgsError.CommandNameError <!!*> currentCommand
 
-                        let! command =
-                            commands
-                            |> Map.tryFind commandName
-                            |> Result.ofOption (ArgsError.CommandNotFound commandName) <!!*> currentCommand
+                        let! (commandName, command) =
+                            match commands |> Commands.find rawCommandName with
+                            | ExactlyOne (commandName, command) -> Ok (commandName, command)
+                            | MoreThanOne (givenName, names) -> Error (ArgsError.AmbigousCommandFound (givenName, names))
+                            | NoCommand unknownName -> Error (ArgsError.CommandNotFound unknownName)
+                            <!!*> currentCommand
 
                         let currentCommand: CurrentCommand = Some (commandName, command)
                         let optionDefinitions = command.Options @ applicationOptions
@@ -151,16 +153,19 @@ module MFConsoleApplication =
                 | Args.ContainsOption OptionsDefinitions.help ->
                     parts |> showApplicationInfo
 
-                    let commandName = args |> Args.getCommandName
+                    let rawCommandName = args |> Args.getCommandName
 
                     return!
-                        match parts.Commands |> Map.tryFind commandName with
-                        | None -> Error (ArgsError.CommandNotFound commandName) <!!> ConsoleApplicationError.ArgsError <!!*> currentCommand
-                        | Some command ->
+                        match parts.Commands |> Commands.find rawCommandName with
+                        | ExactlyOne (commandName, command) ->
                             command
                             |> Help.showForCommand output parts.OptionDecorationLevel parts.ApplicationOptions commandName
 
                             Ok ExitCode.Success
+                        | MoreThanOne (givenName, names) -> Error (ArgsError.AmbigousCommandFound (givenName, names))
+                        | NoCommand unknownName -> Error (ArgsError.CommandNotFound unknownName)
+                        <!!> ConsoleApplicationError.ArgsError
+                        <!!*> currentCommand
                 | Args.ContainsOption OptionsDefinitions.version ->
                     { parts with ApplicationInfo = ApplicationInfo.OnlyNameAndVersion }
                     |> showApplicationInfo

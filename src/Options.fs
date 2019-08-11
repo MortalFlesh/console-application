@@ -310,7 +310,7 @@ module internal OptionsDefinitions =
 
                 match option.Value with
                 | OptionValueDefinition.ValueNone -> ("", false, None)
-                | OptionValueDefinition.ValueRequired defaultValue -> (sprintf "=%s" nameUpper, false, defaultValue |> sprintf "%A" |> Some)
+                | OptionValueDefinition.ValueRequired defaultValue -> (sprintf "=%s" nameUpper, false, defaultValue |> Option.map (sprintf "%A"))
                 | OptionValueDefinition.ValueOptional defaultValue -> (sprintf "[=%s]" nameUpper, false, defaultValue |> Option.map (sprintf "%A"))
                 | OptionValueDefinition.ValueIsArray defaultValue -> (sprintf "[=%s]" nameUpper, true, defaultValue |> Option.map (sprintf "%A"))
                 | OptionValueDefinition.ValueRequiredArray defaultValue -> (sprintf "=%s" nameUpper, true, defaultValue |> Option.map (sprintf "%A"))
