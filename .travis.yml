@@ -7,7 +7,7 @@ os:
   - linux
   - osx
 
-dotnet: 2.2.100
+dotnet: 3.0
 
 script:
   - ./fake.sh build target tests no-clean
