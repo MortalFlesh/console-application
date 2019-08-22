@@ -2,6 +2,8 @@
 
 <!-- There is always Unreleased section on the top. Subsections (Add, Changed, Fix, Removed) should be Add as needed. -->
 ## Unreleased
+
+## 1.1.1 - 2019-08-22
 Fix matching command by short name, with multiple namespaces.
 
 ## 1.1.0 - 2019-08-11
