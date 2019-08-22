@@ -463,6 +463,12 @@ type ArgsError =
     | AmbigousCommandFound of CommandName * CommandName list
     | InputError of InputError
 
+[<RequireQualifiedAccess>]
+module CommandNotFound =
+    let create commandName =
+        ArgsError.CommandNotFound (CommandName (Name commandName))
+
+[<RequireQualifiedAccess>]
 module AmbigousCommandFound =
     let create command commands =
         ArgsError.AmbigousCommandFound (CommandName (Name command), commands |> List.map (Name >> CommandName))

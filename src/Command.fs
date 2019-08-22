@@ -116,10 +116,13 @@ module internal Commands =
             let escapeForRegex (name: string) =
                 name.Replace(".", @"\.")
 
+            let regexToMatchAllToTheNamespaceSeparator =
+                sprintf "[^%s]*?" CommandName.NamespaceSeparator
+
             let partialNamePattern =
                 name
                 |> CommandName.splitByNamespaces
-                |> List.map (escapeForRegex >> sprintf "%s.*?")
+                |> List.map (escapeForRegex >> String.append regexToMatchAllToTheNamespaceSeparator)
                 |> String.concat CommandName.NamespaceSeparator
                 |> sprintf "^%s$"
 

@@ -334,6 +334,16 @@ let provideCommandName = seq {
     }
 
     yield {
+        Description = "Name contains namespaces and should not be matched when not all namespaces are given"
+        CommandName = "group:sub:command"
+        Argv = [| "g:c" |]
+        Expected =
+            CommandNotFound.create "g:c"
+            |> ConsoleApplicationError.ArgsError
+            |> Error
+    }
+
+    yield {
         Description = "Invalid name - starting with -"
         CommandName = "-invalid"
         Argv = [| |]
