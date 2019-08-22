@@ -54,6 +54,9 @@ module internal Bool =
 module internal String =
     open System
 
+    let append suffix string =
+        sprintf "%s%s" string suffix
+
     let toUpper (string: string) = string.ToUpper()
 
     let toInt (string: string) =
