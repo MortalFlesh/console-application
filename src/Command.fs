@@ -143,9 +143,10 @@ module internal Commands =
     let format (commands: Commands) =
         commands
         |> Map.toList
-        |> List.map (fun (name, command) ->
-            sprintf "<c:dark-green>%s</c>" (name |> CommandName.value), command |> Command.description
-        )
+        |> List.map (fun (name, command) -> [
+            sprintf "<c:dark-green>%s</c>" (name |> CommandName.value)
+            command |> Command.description
+        ])
 
     let showAvailable output commands =
         commands
@@ -227,7 +228,7 @@ module internal Commands =
             Execute = fun (input, output) ->
                 let showUsage () =
                     output.SimpleOptions "Usage:" [
-                        "command [options] [--] [arguments]", ""
+                        [ "command [options] [--] [arguments]"; "" ]
                     ]
 
                 let showOptions () =
