@@ -42,11 +42,11 @@ module internal Help =
         let options = command.Options @ applicationOptions
 
         output.SimpleOptions "Description:" [
-            command.Description, ""
+            [ command.Description ]
         ]
 
         output.SimpleOptions "Usage:" [
-            createUsage decorationLevel options commandName command, ""
+            [ createUsage decorationLevel options commandName command ]
         ]
 
         match command.Arguments with
@@ -65,7 +65,7 @@ module internal Help =
 
         command.Help
         |>! (fun help ->
-            output.SimpleOptions "Help" [help |> replaceHelpPlaceholders commandName, ""]
+            output.SimpleOptions "Help" [ [ help |> replaceHelpPlaceholders commandName ] ]
         )
 
     let showSingleLine output applicationOptions (commandName, command) =

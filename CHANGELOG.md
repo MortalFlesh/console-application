@@ -2,6 +2,14 @@
 
 <!-- There is always Unreleased section on the top. Subsections (Add, Changed, Fix, Removed) should be Add as needed. -->
 ## Unreleased
+- Update dependencies
+    - [**BC**] Use `ConsoleStyle ^2.0`
+- [**BC**] Require .net core `^3.1`
+- Add `AssemblyInfo`
+- [**BC**] `Output` functions uses `string list` instead of `string * string` in
+    - `Options`
+    - `SimpleOptions`
+    - `GroupedOptions`
 
 ## 1.1.1 - 2019-08-22
 Fix matching command by short name, with multiple namespaces.

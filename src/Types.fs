@@ -124,9 +124,9 @@ type Output = {
     Success: string -> unit
 
     Messages: string -> string list -> unit
-    Options: string -> (string * string) list -> unit
-    SimpleOptions: string -> (string * string) list -> unit
-    GroupedOptions: string -> string -> (string * string) list -> unit
+    Options: string -> (string list) list -> unit
+    SimpleOptions: string -> (string list) list -> unit
+    GroupedOptions: string -> string -> (string list) list -> unit
     List: string list -> unit
 
     Table: string list -> (string list) list -> unit
@@ -162,8 +162,7 @@ module internal Output =
         GroupedOptions = Console.groupedOptions
         List = Console.list
 
-        Table = fun headers items ->
-            Console.table headers (items |> Seq.map seq)
+        Table = Console.table
 
         ProgressStart = Console.progressStart
         ProgressAdvance = Console.progressAdvance

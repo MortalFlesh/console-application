@@ -2,12 +2,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <OutputType>Library</OutputType>
     <PackageId>MF.ConsoleApplication</PackageId>
     <Version>1.1.1</Version>
     <RepositoryUrl>https://github.com/MortalFlesh/console-application</RepositoryUrl>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="src/ErrorHandling.fs" />
