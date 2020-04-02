@@ -14,7 +14,7 @@ type ToolDir =
     | Local of string
 
 // ========================================================================================================
-// === F# / Library fake build ====================================================== custom = 2020-01-09 =
+// === F# / Console Application fake build =================================================== 2020-01-15 =
 // --------------------------------------------------------------------------------------------------------
 // Options:
 //  - no-clean   - disables clean of dirs in the first step (required on CI)
@@ -39,6 +39,12 @@ let gitCommit = Information.getCurrentSHA1(".")
 let gitBranch = Information.getBranchName(".")
 
 let toolsDir = Local "tools"
+
+/// Runtime IDs: https://docs.microsoft.com/en-us/dotnet/core/rid-catalog#macos-rids
+let runtimeIds =
+    [
+        "osx-x64"
+    ]
 
 // --------------------------------------------------------------------------------------------------------
 // 2. Utilities, DotnetCore functions, etc.
@@ -103,7 +109,7 @@ module private DotnetCore =
         if proc.Start() |> not then failwith "Process was not started."
         proc.WaitForExit()
 
-        if proc.ExitCode <> 0 then failwithf "Command '%s' failed in %s.\n%A" command dir (proc.StandardError.ReadToEnd())
+        if proc.ExitCode <> 0 then failwithf "Command '%s' failed in %s." command dir
         (proc.StandardOutput.ReadToEnd(), proc.StandardError.ReadToEnd())
 
 // --------------------------------------------------------------------------------------------------------
@@ -114,6 +120,7 @@ Target.create "Clean" <| skipOn "no-clean" (fun _ ->
     !! "./**/bin/Release"
     ++ "./**/bin/Debug"
     ++ "./**/obj"
+    ++ "./**/.ionide"
     |> Shell.cleanDirs
 )
 
@@ -175,10 +182,10 @@ Target.create "Lint" <| skipOn "no-lint" (fun _ ->
     |> Seq.map (fun fsproj ->
         match toolsDir with
         | Global ->
-            DotnetCore.runInRoot (sprintf "fsharplint -f %s" fsproj)
+            DotnetCore.runInRoot (sprintf "fsharplint lint %s" fsproj)
             |> fun (result: ProcessResult) -> result.Messages
         | Local dir ->
-            DotnetCore.execute "dotnet-fsharplint" ["-f"; fsproj] ("./" + dir)
+            DotnetCore.execute "dotnet-fsharplint" ["lint"; fsproj] dir
             |> fst
             |> tee (Trace.tracefn "%s")
             |> String.split '\n'
@@ -188,33 +195,25 @@ Target.create "Lint" <| skipOn "no-lint" (fun _ ->
 )
 
 Target.create "Tests" (fun _ ->
-    DotnetCore.runOrFail "run" "tests"
+    if !! "tests/*.fsproj" |> Seq.isEmpty
+    then Trace.tracefn "There are no tests yet."
+    else DotnetCore.runOrFail "run" "tests"
 )
 
 Target.create "Release" (fun _ ->
-    match UserInput.getUserInput "Are you sure - is it tagged yet? [y|n]: " with
-    | "y"
-    | "yes" ->
-        match UserInput.getUserPassword "Nuget ApiKey: " with
-        | "" -> failwithf "You have to provide an api key for nuget."
-        | apiKey ->
-            !! "*.*proj"
-            |> Seq.iter (DotNet.pack id)
+    runtimeIds
+    |> List.iter (fun runtimeId ->
+        sprintf "publish -c Release /p:PublishSingleFile=true -o ./dist/%s --self-contained -r %s dependency-console.fsproj" runtimeId runtimeId
+        |> DotnetCore.runInRootOrFail
+    )
+)
 
-            Directory.ensure "release"
+Target.create "Watch" (fun _ ->
+    DotnetCore.runInRootOrFail "watch run"
+)
 
-            !! "bin/**/*.nupkg"
-            |> Seq.map (tee (DotNet.nugetPush (fun defaults ->
-                { defaults with
-                    PushParams = {
-                        defaults.PushParams with
-                            ApiKey = Some apiKey
-                            Source = Some "https://api.nuget.org/v3/index.json"
-                    }
-                }
-            )))
-            |> Seq.iter (Shell.moveFile "release")
-    | _ -> ()
+Target.create "Run" (fun _ ->
+    DotnetCore.runInRootOrFail "run"
 )
 
 // --------------------------------------------------------------------------------------------------------
@@ -226,6 +225,6 @@ Target.create "Release" (fun _ ->
     ==> "Build"
     ==> "Lint"
     ==> "Tests"
-    ==> "Release"
+    ==> "Release" <=> "Watch" <=> "Run"
 
 Target.runOrDefaultWithArguments "Build"
