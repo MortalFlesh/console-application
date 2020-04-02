@@ -14,7 +14,7 @@ type ToolDir =
     | Local of string
 
 // ========================================================================================================
-// === F# / Console Application fake build =================================================== 2020-01-15 =
+// === F# / Public Library fake build ======================================================== 2020-04-02 =
 // --------------------------------------------------------------------------------------------------------
 // Options:
 //  - no-clean   - disables clean of dirs in the first step (required on CI)
@@ -39,12 +39,6 @@ let gitCommit = Information.getCurrentSHA1(".")
 let gitBranch = Information.getBranchName(".")
 
 let toolsDir = Local "tools"
-
-/// Runtime IDs: https://docs.microsoft.com/en-us/dotnet/core/rid-catalog#macos-rids
-let runtimeIds =
-    [
-        "osx-x64"
-    ]
 
 // --------------------------------------------------------------------------------------------------------
 // 2. Utilities, DotnetCore functions, etc.
@@ -201,19 +195,29 @@ Target.create "Tests" (fun _ ->
 )
 
 Target.create "Release" (fun _ ->
-    runtimeIds
-    |> List.iter (fun runtimeId ->
-        sprintf "publish -c Release /p:PublishSingleFile=true -o ./dist/%s --self-contained -r %s dependency-console.fsproj" runtimeId runtimeId
-        |> DotnetCore.runInRootOrFail
-    )
-)
+    match UserInput.getUserInput "Are you sure - is it tagged yet? [y|n]: " with
+    | "y"
+    | "yes" ->
+        match UserInput.getUserPassword "Nuget ApiKey: " with
+        | "" -> failwithf "You have to provide an api key for nuget."
+        | apiKey ->
+            !! "*.*proj"
+            |> Seq.iter (DotNet.pack id)
 
-Target.create "Watch" (fun _ ->
-    DotnetCore.runInRootOrFail "watch run"
-)
+            Directory.ensure "release"
 
-Target.create "Run" (fun _ ->
-    DotnetCore.runInRootOrFail "run"
+            !! "bin/**/*.nupkg"
+            |> Seq.map (tee (DotNet.nugetPush (fun defaults ->
+                { defaults with
+                    PushParams = {
+                        defaults.PushParams with
+                            ApiKey = Some apiKey
+                            Source = Some "https://api.nuget.org/v3/index.json"
+                    }
+                }
+            )))
+            |> Seq.iter (Shell.moveFile "release")
+    | _ -> ()
 )
 
 // --------------------------------------------------------------------------------------------------------
@@ -225,6 +229,6 @@ Target.create "Run" (fun _ ->
     ==> "Build"
     ==> "Lint"
     ==> "Tests"
-    ==> "Release" <=> "Watch" <=> "Run"
+    ==> "Release"
 
 Target.runOrDefaultWithArguments "Build"
