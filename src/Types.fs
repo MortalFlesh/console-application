@@ -1,5 +1,7 @@
 namespace MF.ConsoleApplication
 
+open MF.ErrorHandling
+
 // Common types
 // ***************************
 
@@ -254,17 +256,17 @@ module CommandNames =
 
 [<RequireQualifiedAccess>]
 module internal CommandName =
-    open ResultOperators
+    open MF.ErrorHandling.Result.Operators
 
     [<Literal>]
     let NamespaceSeparator = ":"
 
     let private createName = function
-        | Regex "^([\w\.\-: ]*)$" _ as name ->
+        | Regex @"^([\w\.\-: ]*)$" _ as name ->
             name
             |> Name.create [ NamespaceSeparator; "-" ] [ " "; NamespaceSeparator + NamespaceSeparator ] [ NamespaceSeparator ]
             <!> CommandName
-            <!!> CommandNameError.NameError
+            <@> CommandNameError.NameError
         | invalidName -> Error (CommandNameError.Invalid invalidName)
 
     let create = function
@@ -306,13 +308,13 @@ type ApplicationName = private ApplicationName of Name
 
 [<RequireQualifiedAccess>]
 module internal ApplicationName =
-    open ResultOperators
+    open MF.ErrorHandling.Result.Operators
 
     let create name =
         name
         |> Name.create [] [] []
         <!> ApplicationName
-        <!!> ApplicationNameError.NameError
+        <@> ApplicationNameError.NameError
 
     let value (ApplicationName (Name name)) = name
 

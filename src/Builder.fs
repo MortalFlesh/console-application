@@ -1,6 +1,7 @@
 namespace MF.ConsoleApplication
 
-open ResultOperators
+open MF.ErrorHandling
+open MF.ErrorHandling.Result.Operators
 
 [<RequireQualifiedAccess>]
 type ApplicationInfo =
@@ -79,7 +80,7 @@ type ConsoleApplicationBuilder<'r> internal (buildApplication: Definition -> 'r)
             result {
                 let! name =
                     name
-                    |> ApplicationName.create <!!> ConsoleApplicationError.ApplicationNameError
+                    |> ApplicationName.create <@> ConsoleApplicationError.ApplicationNameError
 
                 return { parts with Name = name }
             }
@@ -102,7 +103,7 @@ type ConsoleApplicationBuilder<'r> internal (buildApplication: Definition -> 'r)
             result {
                 let! commandName =
                     defaultCommand
-                    |> CommandName.create <!!> ConsoleApplicationError.CommandNameError
+                    |> CommandName.create <@> ConsoleApplicationError.CommandNameError
 
                 return { parts with DefaultCommand = commandName }
             }
@@ -122,11 +123,11 @@ type ConsoleApplicationBuilder<'r> internal (buildApplication: Definition -> 'r)
             result {
                 let! commandName =
                     name
-                    |> CommandName.create <!!> ConsoleApplicationError.CommandNameError
+                    |> CommandName.create <@> ConsoleApplicationError.CommandNameError
 
                 let! command =
                     command
-                    |> CommandDefinition.validate <!!> ConsoleApplicationError.CommandDefinitionError
+                    |> CommandDefinition.validate <@> ConsoleApplicationError.CommandDefinitionError
 
                 return { parts with Commands = parts.Commands.Add(commandName, command) }
             }

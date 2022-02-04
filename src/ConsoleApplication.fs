@@ -4,7 +4,8 @@ namespace MF.ConsoleApplication
 module MFConsoleApplication =
     open MF.ConsoleStyle
     open OptionsOperators
-    open ResultOperators
+    open MF.ErrorHandling
+    open MF.ErrorHandling.Result.Operators
 
     let consoleApplication =
         let showError application = Error.show application None
@@ -51,11 +52,11 @@ module MFConsoleApplication =
 
     /// Map error by appending a current command.
     let private (<!!*>) result (currentCommand: CurrentCommand) =
-        result <!!> fun __ -> (__, currentCommand)
+        result <@> fun __ -> (__, currentCommand)
 
     /// Map error with appended current command.
     let private (<!!!>) result f =
-        result <!!> fun (error, (__: CurrentCommand)) -> (error |> f, __)
+        result <@> fun (error, (__: CurrentCommand)) -> (error |> f, __)
 
     type private Args = InputValue []
 
@@ -93,7 +94,7 @@ module MFConsoleApplication =
 
                         let! rawCommandName =
                             rawArg
-                            |> CommandName.createInRuntime <!!> ArgsError.CommandNameError <!!*> currentCommand
+                            |> CommandName.createInRuntime <@> ArgsError.CommandNameError <!!*> currentCommand
 
                         let! (commandName, command) =
                             match commands |> Commands.find rawCommandName with
@@ -108,7 +109,7 @@ module MFConsoleApplication =
 
                         let! parsedInput =
                             rawArgs
-                            |> Input.parse command.Arguments definitions ParsedInput.empty <!!> ArgsError.InputError <!!*> currentCommand
+                            |> Input.parse command.Arguments definitions ParsedInput.empty <@> ArgsError.InputError <!!*> currentCommand
 
                         let input = {
                             Arguments = parsedInput.Arguments.Add(ArgumentNames.Command, ArgumentValue.Required (commandName |> CommandName.value))
@@ -164,7 +165,7 @@ module MFConsoleApplication =
                             Ok ExitCode.Success
                         | MoreThanOne (givenName, names) -> Error (ArgsError.AmbigousCommandFound (givenName, names))
                         | NoCommand unknownName -> Error (ArgsError.CommandNotFound unknownName)
-                        <!!> ConsoleApplicationError.ArgsError
+                        <@> ConsoleApplicationError.ArgsError
                         <!!*> currentCommand
                 | Args.ContainsOption OptionsDefinitions.version ->
                     { parts with ApplicationInfo = ApplicationInfo.OnlyNameAndVersion }
@@ -197,7 +198,7 @@ module MFConsoleApplication =
 
                         let! input =
                             input
-                            |> Input.prepareUnfilledArguments unfilledArguments <!!> (ArgsError.InputError >> ConsoleApplicationError.ArgsError) <!!*> currentCommand
+                            |> Input.prepareUnfilledArguments unfilledArguments <@> (ArgsError.InputError >> ConsoleApplicationError.ArgsError) <!!*> currentCommand
 
                         return
                             (input, output)
@@ -210,7 +211,7 @@ module MFConsoleApplication =
 
     let runResult args application =
         application
-        |> runApplication args <!!> fst
+        |> runApplication args <@> fst
 
     let run args application =
         application

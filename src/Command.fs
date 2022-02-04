@@ -1,5 +1,7 @@
 namespace MF.ConsoleApplication
 
+open MF.ErrorHandling
+
 type InteractiveInput = {
     Input: Input
     Ask: string -> string
@@ -62,19 +64,19 @@ type Command = private {
 
 [<RequireQualifiedAccess>]
 module internal CommandDefinition =
-    open ResultOperators
+    open MF.ErrorHandling.Result.Operators
 
     let validate (definition: CommandDefinition): Result<Command, CommandDefinitionError> =
         result {
             let! arguments =
                 definition.Arguments
                 |> Result.sequence
-                >>= ArgumentsDefinitions.validate <!!> CommandDefinitionError.ArgumentDefinitionError
+                >>= ArgumentsDefinitions.validate <@> CommandDefinitionError.ArgumentDefinitionError
 
             let! options =
                 definition.Options
                 |> Result.sequence
-                >>= OptionsDefinitions.validate <!!> CommandDefinitionError.OptionDefinitionError
+                >>= OptionsDefinitions.validate <@> CommandDefinitionError.OptionDefinitionError
 
             return {
                 Description = definition.Description
@@ -101,7 +103,7 @@ type internal FindResult =
 
 [<RequireQualifiedAccess>]
 module internal Commands =
-    open ResultOperators
+    open MF.ErrorHandling.Result.Operators
 
     let private namesByPattern pattern (commands: Commands): CommandName list =
         commands
@@ -178,7 +180,7 @@ module internal Commands =
                     let! rawCommandName =
                         input
                         |> Input.getArgumentValue "command_name"
-                        |> CommandName.createInRuntime <!!> ArgsError.CommandNameError
+                        |> CommandName.createInRuntime <@> ArgsError.CommandNameError
 
                     return!
                         match commands |> find rawCommandName with
@@ -186,7 +188,7 @@ module internal Commands =
                         | MoreThanOne (givenName, names) -> Error (ArgsError.AmbigousCommandFound (givenName, names))
                         | NoCommand unknownName -> Error (ArgsError.CommandNotFound unknownName)
                 }
-                <!!> ConsoleApplicationError.ArgsError
+                <@> ConsoleApplicationError.ArgsError
                 |> function
                     | Ok (commandName, command) ->
                         showHelpForCommand commandName command

@@ -1,15 +1,12 @@
-framework: netcoreapp3.1
+framework: net6.0
 storage: none
 
 source https://api.nuget.org/v3/index.json
-nuget FSharp.Core
-nuget ConsoleStyle ~> 2.0.0
+nuget FSharp.Core ~> 6.0
+nuget ConsoleStyle ~> 2.0
 
-group Tests
-    storage: none
-    source https://api.nuget.org/v3/index.json
-    nuget Expecto
-    nuget YoloDev.Expecto.TestSdk
+nuget Expecto
+nuget YoloDev.Expecto.TestSdk
 
 // [ FAKE GROUP ]
 group Build

@@ -1,5 +1,7 @@
 namespace MF.ConsoleApplication
 
+open MF.ErrorHandling
+
 type OptionDecorationLevel =
     | Minimal
     | Complete
@@ -16,7 +18,7 @@ type OptionName = private OptionName of Name
 
 [<RequireQualifiedAccess>]
 module internal OptionName =
-    open ResultOperators
+    open MF.ErrorHandling.Result.Operators
 
     let create = function
         | name when OptionNames.reserved |> List.contains name -> Error (OptionNameError.Reserved name)
@@ -24,7 +26,7 @@ module internal OptionName =
             name
             |> Name.create ["-"] ["="; " "] []
             <!> OptionName
-            <!!> OptionNameError.NameError
+            <@> OptionNameError.NameError
 
     let parseRaw (value: string) =
         value.Split("=") |> Seq.head
@@ -144,14 +146,14 @@ type RawOptionDefinition = internal {
 
 [<RequireQualifiedAccess>]
 module internal RawOptionDefinition =
-    open ResultOperators
+    open MF.ErrorHandling.Result.Operators
 
     let create name shortcut description value =
         result {
-            let! name = name |> OptionName.create <!!> OptionDefinitionError.OptionNameError
+            let! name = name |> OptionName.create <@> OptionDefinitionError.OptionNameError
             let! shortcut =
                 match shortcut with
-                | Some shortcut -> shortcut |> OptionShortcut.create <!> Some <!!> OptionDefinitionError.OptionShortcutError
+                | Some shortcut -> shortcut |> OptionShortcut.create <!> Some <@> OptionDefinitionError.OptionShortcutError
                 | _ -> Ok None
 
             return {
@@ -364,7 +366,7 @@ type internal Options = Map<string, OptionValue>
 [<RequireQualifiedAccess>]
 module internal Options =
     open OptionsOperators
-    open ResultOperators
+    open MF.ErrorHandling.Result.Operators
 
     let (|HasOption|_|) (option: string) (options: Options) =
         options |> Map.tryFind option

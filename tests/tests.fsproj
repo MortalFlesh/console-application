@@ -3,13 +3,11 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\console-application.fsproj">
-      <Name>ConsoleApplication</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\console-application.fsproj" />
   </ItemGroup>
 
   <ItemGroup>

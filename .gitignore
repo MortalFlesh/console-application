@@ -11,6 +11,9 @@ bld/
 [Ll]og/
 AssemblyInfo.fs
 
+# ionide
+.ionide/
+
 # Paket dependency manager
 .paket/
 packages/
@@ -18,9 +21,6 @@ paket-files/
 
 # FAKE - F# Make
 .fake/
-
-# Ionide
-.ionide/
 
 # Release
 release/

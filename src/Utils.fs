@@ -1,6 +1,8 @@
 namespace MF.ConsoleApplication
 
 module internal OptionsOperators =
+    open MF.ErrorHandling
+
     /// Default value - if value is None, default value will be used
     let (<?=>) defaultValue opt = Option.defaultValue opt defaultValue
 

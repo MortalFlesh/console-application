@@ -1,5 +1,7 @@
 namespace MF.ConsoleApplication
 
+open MF.ErrorHandling
+
 [<RequireQualifiedAccess>]
 type ArgumentValueDefinition =
     | Required
@@ -18,7 +20,7 @@ type ArgumentName = private ArgumentName of Name
 
 [<RequireQualifiedAccess>]
 module internal ArgumentName =
-    open ResultOperators
+    open MF.ErrorHandling.Result.Operators
 
     let create = function
         | ArgumentNames.Command -> Error (ArgumentNameError.Reserved ArgumentNames.Command)
@@ -26,7 +28,7 @@ module internal ArgumentName =
             name
             |> Name.create ["-"] [" "] []
             <!> ArgumentName
-            <!!> ArgumentNameError.NameError
+            <@> ArgumentNameError.NameError
 
     let value (ArgumentName (Name name)) = name
 
@@ -44,7 +46,7 @@ type RawArgumentDefinition = internal {
 
 [<RequireQualifiedAccess>]
 module internal RawArgumentDefinition =
-    open ResultOperators
+    open MF.ErrorHandling.Result.Operators
 
     let name ({ ArgumentName = name }: RawArgumentDefinition) = name
 
@@ -52,7 +54,7 @@ module internal RawArgumentDefinition =
         result {
             let! name =
                 name
-                |> ArgumentName.create <!!> ArgumentDefinitionError.ArgumentNameError
+                |> ArgumentName.create <@> ArgumentDefinitionError.ArgumentNameError
 
             return {
                 ArgumentName = name
@@ -229,7 +231,7 @@ type internal Arguments = Map<string, ArgumentValue>
 [<RequireQualifiedAccess>]
 module internal Arguments =
     open OptionsOperators
-    open ResultOperators
+    open MF.ErrorHandling.Result.Operators
 
     [<Literal>]
     let Separator = "--"
@@ -318,7 +320,7 @@ module internal Arguments =
                             rawArgs
                             |> NotEmptyList.create
                             <!> ArgumentValue.RequiredArray
-                            <!!> (function
+                            <@> (function
                                 | NotEmptyListError.NoValues -> ArgumentsError.NotEnoughArguments argumentName
                             )
 
@@ -397,7 +399,7 @@ module internal Arguments =
                                     match value with
                                     | ArgumentValue.RequiredArray values -> NotEmptyList.complete values
                                     | _ -> failwith "Logic error: Only RequiredArray argument value could be here."
-                                    <!!> (function
+                                    <@> (function
                                         | NotEmptyListError.NoValues -> ArgumentsError.NotEnoughArguments argumentName
                                     )
 
