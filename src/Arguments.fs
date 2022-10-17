@@ -213,9 +213,13 @@ module internal ArgumentsDefinitions =
                 | _ -> assertOptionalArgumentsAfterRequired hasOptional arguments
 
         result {
-            let! _ = arguments |> assertUnique
-            let! _ = arguments |> assertArrayArgumentIsLast
-            let! _ = arguments |> assertOptionalArgumentsAfterRequired false
+            let! _ =
+                [
+                    arguments |> assertUnique
+                    arguments |> assertArrayArgumentIsLast
+                    arguments |> assertOptionalArgumentsAfterRequired false
+                ]
+                |> Validation.ofResults
 
             return arguments |> List.map fromRaw
         }

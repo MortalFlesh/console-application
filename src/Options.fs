@@ -355,8 +355,12 @@ module internal OptionsDefinitions =
             | (Some (OptionShortcut notUnique)) :: _ -> Error (OptionDefinitionError.OptionShortcutAlreadyExists notUnique)
 
         result {
-            let! _ = options |> assertUniqueOptions
-            let! _ = options |> assertUniqueShortcuts
+            let! _ =
+                [
+                    options |> assertUniqueOptions
+                    options |> assertUniqueShortcuts
+                ]
+                |> Validation.ofResults
 
             return options |> List.map fromRaw
         }

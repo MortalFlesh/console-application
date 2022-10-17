@@ -41,6 +41,7 @@ let provideArgumentDefinitions = seq {
             NameError.Empty
             |> ArgumentNameError.NameError
             |> ArgumentDefinitionError.ArgumentNameError
+            |> List.singleton
             |> CommandDefinitionError.ArgumentDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -55,6 +56,7 @@ let provideArgumentDefinitions = seq {
             NameError.Contains ("foo bar", " ")
             |> ArgumentNameError.NameError
             |> ArgumentDefinitionError.ArgumentNameError
+            |> List.singleton
             |> CommandDefinitionError.ArgumentDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -67,7 +69,7 @@ let provideArgumentDefinitions = seq {
         ]
         Argv = [| |]
         Expected =
-            ArgumentDefinitionError.ArgumentAfterArrayArgument
+            [ArgumentDefinitionError.ArgumentAfterArrayArgument]
             |> CommandDefinitionError.ArgumentDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -80,7 +82,10 @@ let provideArgumentDefinitions = seq {
         ]
         Argv = [| |]
         Expected =
-            ArgumentDefinitionError.ArgumentAfterArrayArgument
+            [
+                ArgumentDefinitionError.ArgumentAfterArrayArgument
+                ArgumentDefinitionError.RequiredArgumentAfterOptional
+            ]
             |> CommandDefinitionError.ArgumentDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -93,7 +98,7 @@ let provideArgumentDefinitions = seq {
         ]
         Argv = [| |]
         Expected =
-            ArgumentDefinitionError.RequiredArgumentAfterOptional
+            [ArgumentDefinitionError.RequiredArgumentAfterOptional]
             |> CommandDefinitionError.ArgumentDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -107,7 +112,7 @@ let provideArgumentDefinitions = seq {
         ]
         Argv = [| |]
         Expected =
-            ArgumentDefinitionError.RequiredArgumentAfterOptional
+            [ArgumentDefinitionError.RequiredArgumentAfterOptional]
             |> CommandDefinitionError.ArgumentDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -121,7 +126,7 @@ let provideArgumentDefinitions = seq {
         ]
         Argv = [| |]
         Expected =
-            ArgumentDefinitionError.ArgumentAlreadyExists "mandatory"
+            [ArgumentDefinitionError.ArgumentAlreadyExists "mandatory"]
             |> CommandDefinitionError.ArgumentDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -145,6 +150,7 @@ let provideOptionDefinitions = seq {
             NameError.Empty
             |> OptionNameError.NameError
             |> OptionDefinitionError.OptionNameError
+            |> List.singleton
             |> CommandDefinitionError.OptionDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -159,6 +165,7 @@ let provideOptionDefinitions = seq {
             NameError.StartsWith ("-opt", "-")
             |> OptionNameError.NameError
             |> OptionDefinitionError.OptionNameError
+            |> List.singleton
             |> CommandDefinitionError.OptionDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -173,6 +180,7 @@ let provideOptionDefinitions = seq {
             NameError.Contains ("o p t i o n", " ")
             |> OptionNameError.NameError
             |> OptionDefinitionError.OptionNameError
+            |> List.singleton
             |> CommandDefinitionError.OptionDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -187,6 +195,7 @@ let provideOptionDefinitions = seq {
             NameError.Contains ("opt=", "=")
             |> OptionNameError.NameError
             |> OptionDefinitionError.OptionNameError
+            |> List.singleton
             |> CommandDefinitionError.OptionDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -200,6 +209,7 @@ let provideOptionDefinitions = seq {
         Expected =
             OptionShortcutError.Empty
             |> OptionDefinitionError.OptionShortcutError
+            |> List.singleton
             |> CommandDefinitionError.OptionDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -213,6 +223,7 @@ let provideOptionDefinitions = seq {
         Expected =
             OptionShortcutError.Contains ("-o", "-")
             |> OptionDefinitionError.OptionShortcutError
+            |> List.singleton
             |> CommandDefinitionError.OptionDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -226,6 +237,7 @@ let provideOptionDefinitions = seq {
         Expected =
             OptionShortcutError.MoreThanSingleLetter "o|oo"
             |> OptionDefinitionError.OptionShortcutError
+            |> List.singleton
             |> CommandDefinitionError.OptionDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -239,6 +251,7 @@ let provideOptionDefinitions = seq {
         Expected =
             OptionShortcutError.Reserved (ReservedShortcut ("V", "version"))
             |> OptionDefinitionError.OptionShortcutError
+            |> List.singleton
             |> CommandDefinitionError.OptionDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -252,6 +265,7 @@ let provideOptionDefinitions = seq {
         Argv = [| |]
         Expected =
             OptionDefinitionError.OptionAlreadyExists "opt"
+            |> List.singleton
             |> CommandDefinitionError.OptionDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
@@ -274,6 +288,7 @@ let provideOptionDefinitions = seq {
         Argv = [| |]
         Expected =
             OptionDefinitionError.OptionShortcutAlreadyExists "o"
+            |> List.singleton
             |> CommandDefinitionError.OptionDefinitionError
             |> ConsoleApplicationError.CommandDefinitionError
             |> Error
