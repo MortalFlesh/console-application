@@ -86,11 +86,11 @@ module internal Error =
         | Ok parts ->
             error
             |> ConsoleApplicationError.format
-            |> parts.Output.Error
+            |> List.iter parts.Output.Error
 
             currentCommand
             |>! Help.showSingleLine parts.Output parts.ApplicationOptions
         | Result.Error e ->
             e
             |> ConsoleApplicationError.format
-            |> Output.defaults.Error
+            |> List.iter Output.defaults.Error

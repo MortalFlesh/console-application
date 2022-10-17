@@ -70,12 +70,12 @@ module internal CommandDefinition =
         result {
             let! arguments =
                 definition.Arguments
-                |> Result.sequence
+                |> Validation.ofResults
                 >>= ArgumentsDefinitions.validate <@> CommandDefinitionError.ArgumentDefinitionError
 
             let! options =
                 definition.Options
-                |> Result.sequence
+                |> Validation.ofResults
                 >>= OptionsDefinitions.validate <@> CommandDefinitionError.OptionDefinitionError
 
             return {

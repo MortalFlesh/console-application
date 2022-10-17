@@ -348,14 +348,14 @@ module internal OptionDefinitionError =
 
 [<RequireQualifiedAccess>]
 type CommandDefinitionError =
-    | ArgumentDefinitionError of ArgumentDefinitionError
-    | OptionDefinitionError of OptionDefinitionError
+    | ArgumentDefinitionError of ArgumentDefinitionError list
+    | OptionDefinitionError of OptionDefinitionError list
 
 [<RequireQualifiedAccess>]
 module internal CommandDefinitionError =
     let format = function
-        | CommandDefinitionError.ArgumentDefinitionError error -> ArgumentDefinitionError.format error
-        | CommandDefinitionError.OptionDefinitionError error -> OptionDefinitionError.format error
+        | CommandDefinitionError.ArgumentDefinitionError errors -> errors |> List.map ArgumentDefinitionError.format
+        | CommandDefinitionError.OptionDefinitionError errors -> errors |> List.map OptionDefinitionError.format
 
 // Runtime
 
@@ -438,8 +438,8 @@ type ConsoleApplicationError =
 [<RequireQualifiedAccess>]
 module internal ConsoleApplicationError =
     let format = function
-        | ConsoleApplicationError.ArgsError error -> ArgsError.format error
-        | ConsoleApplicationError.CommandNameError error -> CommandNameError.format error
-        | ConsoleApplicationError.ApplicationNameError error -> ApplicationNameError.format error
+        | ConsoleApplicationError.ArgsError error -> [ ArgsError.format error ]
+        | ConsoleApplicationError.CommandNameError error -> [ CommandNameError.format error ]
+        | ConsoleApplicationError.ApplicationNameError error -> [ ApplicationNameError.format error ]
         | ConsoleApplicationError.CommandDefinitionError error -> CommandDefinitionError.format error
-        | ConsoleApplicationError.ConsoleApplicationError error -> error
+        | ConsoleApplicationError.ConsoleApplicationError error -> [ error ]
