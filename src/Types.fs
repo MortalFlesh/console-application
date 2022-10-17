@@ -1,5 +1,7 @@
 namespace MF.ConsoleApplication
 
+open MF.ErrorHandling
+
 // Common types
 // ***************************
 
@@ -105,69 +107,11 @@ open MF.ConsoleStyle
 
 type ProgressBar = ShellProgressBar.ProgressBar option
 
-type Output = {
-    SetVerbosity: Verbosity.Level -> unit
-    IsQuiet: unit -> bool
-    IsNormal: unit -> bool
-    IsVerbose: unit -> bool
-    IsVeryVerbose: unit -> bool
-    IsDebug: unit -> bool
-
-    Message: string -> unit
-    NewLine: unit -> unit
-    MainTitle: string -> unit
-    Title: string -> unit
-    Section: string -> unit
-    SubTitle: string -> unit
-
-    Error: string -> unit
-    Success: string -> unit
-
-    Messages: string -> string list -> unit
-    Options: string -> (string list) list -> unit
-    SimpleOptions: string -> (string list) list -> unit
-    GroupedOptions: string -> string -> (string list) list -> unit
-    List: string list -> unit
-
-    Table: string list -> (string list) list -> unit
-
-    ProgressStart: string -> int -> ProgressBar
-    ProgressAdvance: ProgressBar -> unit
-    ProgressFinish: ProgressBar -> unit
-}
+type Output = ConsoleStyle
 
 [<RequireQualifiedAccess>]
 module internal Output =
-    let console = {
-        SetVerbosity = Console.setVerbosity
-        IsQuiet = Console.isQuiet
-        IsNormal = Console.isNormal
-        IsVerbose = Console.isVerbose
-        IsVeryVerbose = Console.isVeryVerbose
-        IsDebug = Console.isDebug
-
-        Message = Console.message
-        NewLine = Console.newLine
-        MainTitle = Console.mainTitle
-        Title = Console.title
-        Section = Console.section
-        SubTitle = Console.subTitle
-
-        Error = Console.error
-        Success = Console.success
-
-        Messages = Console.messages
-        Options = Console.options
-        SimpleOptions = Console.simpleOptions
-        GroupedOptions = Console.groupedOptions
-        List = Console.list
-
-        Table = Console.table
-
-        ProgressStart = Console.progressStart
-        ProgressAdvance = Console.progressAdvance
-        ProgressFinish = Console.progressFinish
-    }
+    let defaults = ConsoleStyle()
 
 // Command
 // ***************************
@@ -254,26 +198,26 @@ module CommandNames =
 
 [<RequireQualifiedAccess>]
 module internal CommandName =
-    open ResultOperators
+    open MF.ErrorHandling.Result.Operators
 
     [<Literal>]
     let NamespaceSeparator = ":"
 
     let private createName = function
-        | Regex "^([\w\.\-: ]*)$" _ as name ->
+        | Regex @"^([\w\.\-: ]*)$" _ as name ->
             name
             |> Name.create [ NamespaceSeparator; "-" ] [ " "; NamespaceSeparator + NamespaceSeparator ] [ NamespaceSeparator ]
             <!> CommandName
-            <!!> CommandNameError.NameError
-        | invalidName -> Error (CommandNameError.Invalid invalidName)
+            <@> CommandNameError.NameError
+        | invalidName -> Result.Error (CommandNameError.Invalid invalidName)
 
     let create = function
-        | ArgumentNames.Command -> Error (CommandNameError.Reserved ArgumentNames.Command)
-        | name when CommandNames.all |> List.contains name -> Error (CommandNameError.Reserved name)
+        | ArgumentNames.Command -> Result.Error (CommandNameError.Reserved ArgumentNames.Command)
+        | name when CommandNames.all |> List.contains name -> Result.Error (CommandNameError.Reserved name)
         | name -> name |> createName
 
     let createInRuntime = function
-        | ArgumentNames.Command -> Error (CommandNameError.Invalid ArgumentNames.Command)
+        | ArgumentNames.Command -> Result.Error (CommandNameError.Invalid ArgumentNames.Command)
         | name -> name |> createName
 
     let value (CommandName (Name name)) = name
@@ -306,13 +250,13 @@ type ApplicationName = private ApplicationName of Name
 
 [<RequireQualifiedAccess>]
 module internal ApplicationName =
-    open ResultOperators
+    open MF.ErrorHandling.Result.Operators
 
     let create name =
         name
         |> Name.create [] [] []
         <!> ApplicationName
-        <!!> ApplicationNameError.NameError
+        <@> ApplicationNameError.NameError
 
     let value (ApplicationName (Name name)) = name
 

@@ -2,13 +2,19 @@
 
 <!-- There is always Unreleased section on the top. Subsections (Add, Changed, Fix, Removed) should be Add as needed. -->
 ## Unreleased
+- [**BC**] Use net6.0
+- Update dependencies
+    - [**BC**] Use `ConsoleStyle` `3.0`
+        - Use `MF.ConsoleStyle.ConsoleStyle` as the `Output` for the ConsoleApplication
+        - `Verbosity` is not set globally anymore
+- Add abstraction over `ProgressBar` which handles `debug` verbosity better
 
 ## 2.0.0 - 2020-01-13
 - Update dependencies
     - [**BC**] Use `ConsoleStyle ^2.0`
 - [**BC**] Require .net core `^3.1`
 - Add `AssemblyInfo`
-- [**BC**] `Output` functions uses `string list` instead of `string * string` in
+- [**BC**] `Output` functions uses `string list` instead of `string * string` in
     - `Options`
     - `SimpleOptions`
     - `GroupedOptions`

@@ -1,6 +1,7 @@
 namespace MF.ConsoleApplication
 
-open ResultOperators
+open MF.ErrorHandling
+open MF.ErrorHandling.Result.Operators
 
 [<RequireQualifiedAccess>]
 type ApplicationInfo =
@@ -26,18 +27,20 @@ type internal DefinitionParts = {
 
 [<RequireQualifiedAccess>]
 module internal DefinitionParts =
-    let defaults = {
-        Name = ApplicationName (Name "Console Application")
-        Version = None
-        Title = None
-        ApplicationInfo = ApplicationInfo.Hidden
-        ApplicationOptions = Commands.applicationOptions
-        Output = Output.console
-        Ask = MF.ConsoleStyle.Console.ask
-        Commands = Map.empty
-        DefaultCommand = CommandName (Name CommandNames.List)
-        OptionDecorationLevel = Minimal
-    }
+    let defaults =
+        let output = Output.defaults
+        {
+            Name = ApplicationName (Name "Console Application")
+            Version = None
+            Title = None
+            ApplicationInfo = ApplicationInfo.Hidden
+            ApplicationOptions = Commands.applicationOptions
+            Output = output
+            Ask = output.Ask
+            Commands = Map.empty
+            DefaultCommand = CommandName (Name CommandNames.List)
+            OptionDecorationLevel = Minimal
+        }
 
     let output { Output = output } = output
 
@@ -79,7 +82,7 @@ type ConsoleApplicationBuilder<'r> internal (buildApplication: Definition -> 'r)
             result {
                 let! name =
                     name
-                    |> ApplicationName.create <!!> ConsoleApplicationError.ApplicationNameError
+                    |> ApplicationName.create <@> ConsoleApplicationError.ApplicationNameError
 
                 return { parts with Name = name }
             }
@@ -102,7 +105,7 @@ type ConsoleApplicationBuilder<'r> internal (buildApplication: Definition -> 'r)
             result {
                 let! commandName =
                     defaultCommand
-                    |> CommandName.create <!!> ConsoleApplicationError.CommandNameError
+                    |> CommandName.create <@> ConsoleApplicationError.CommandNameError
 
                 return { parts with DefaultCommand = commandName }
             }
@@ -122,18 +125,18 @@ type ConsoleApplicationBuilder<'r> internal (buildApplication: Definition -> 'r)
             result {
                 let! commandName =
                     name
-                    |> CommandName.create <!!> ConsoleApplicationError.CommandNameError
+                    |> CommandName.create <@> ConsoleApplicationError.CommandNameError
 
                 let! command =
                     command
-                    |> CommandDefinition.validate <!!> ConsoleApplicationError.CommandDefinitionError
+                    |> CommandDefinition.validate <@> ConsoleApplicationError.CommandDefinitionError
 
                 return { parts with Commands = parts.Commands.Add(commandName, command) }
             }
 
     [<CustomOperation("useOutput")>]
     member __.UseOutput(state, output): Definition =
-        state <!> fun parts -> { parts with Output = output }
+        state <!> fun parts -> { parts with Output = output; Ask = output.Ask }
 
     [<CustomOperation("useAsk")>]
     member __.UseAsk(state, ask): Definition =

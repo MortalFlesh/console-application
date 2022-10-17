@@ -1,5 +1,7 @@
 namespace MF.ConsoleApplication
 
+open MF.ErrorHandling
+
 type internal ParsedInput = {
     Arguments: Arguments
     Options: Options
@@ -23,7 +25,7 @@ type Input = {
 
 [<RequireQualifiedAccess>]
 module Input =
-    open ResultOperators
+    open MF.ErrorHandling.Result.Operators
 
     let internal empty = {
         Arguments = Map.empty
@@ -32,8 +34,9 @@ module Input =
         OptionDefinitions = []
     }
 
-    let rec internal parse allArgumentDefinitions definitionsToParse (input: ParsedInput) (args: InputValue list) =
+    let rec internal parse output allArgumentDefinitions definitionsToParse (input: ParsedInput) (args: InputValue list) =
         let (optionDefinitions: OptionsDefinitions, argumentDefinitions: ArgumentsDefinitions) = definitionsToParse
+        let debug = debug output
 
         match args with
         | [] -> Ok { input with UnfilledArgumentDefinitions = argumentDefinitions }
@@ -41,7 +44,7 @@ module Input =
             result {
                 let! (arguments, unfilledArgumentDefinitions) =
                     rawArguments
-                    |> Arguments.parse input.Arguments argumentDefinitions <!!> InputError.ArgumentsError
+                    |> Arguments.parse output input.Arguments argumentDefinitions <@> InputError.ArgumentsError
 
                 return { input with Arguments = arguments; UnfilledArgumentDefinitions = unfilledArgumentDefinitions }
             }
@@ -57,7 +60,7 @@ module Input =
                                 if rawArg |> Option.containsValue
                                     then (rawArg |> OptionValue.parse) :: rawArgs
                                     else rawArgs
-                                |> Options.parseValue option input.Options <!!> InputError.OptionsError
+                                |> Options.parseValue option input.Options <@> InputError.OptionsError
 
                             return { input with Options = options }, definitionsToParse, rawArgs
                         }
@@ -69,7 +72,7 @@ module Input =
                             let! options, rawArgs =
                                 rawArg
                                 |> Letters.fromShortcut
-                                |> Options.parseShortcut optionDefinitions input.Options rawArgs <!!> InputError.OptionsError
+                                |> Options.parseShortcut optionDefinitions input.Options rawArgs <@> InputError.OptionsError
 
                             return { input with Options = options }, definitionsToParse, rawArgs
                         }
@@ -83,14 +86,14 @@ module Input =
                         result {
                             let! (arguments, argumentDefinitions) =
                                 rawArgument
-                                |> Arguments.parseArgument input.Arguments allArgumentDefinitions argumentDefinitions <!!> InputError.ArgumentsError
+                                |> Arguments.parseArgument input.Arguments allArgumentDefinitions argumentDefinitions <@> InputError.ArgumentsError
 
                             return { input with Arguments = arguments }, (optionDefinitions, argumentDefinitions), rawArgs
                         }
 
                 return!
                     rawArgs
-                    |> parse allArgumentDefinitions definitionsToParse parsedInput
+                    |> parse output allArgumentDefinitions definitionsToParse parsedInput
             }
 
     let internal prepareUnfilledArguments (unfilledArgumentDefinitions: UnfilledArgumentDefinitions) (input: Input) =
@@ -100,7 +103,7 @@ module Input =
             result {
                 let! arguments =
                     input.Arguments
-                    |> Arguments.prepareMissingArguments unfilledDefinitions <!!> InputError.ArgumentsError
+                    |> Arguments.prepareMissingArguments unfilledDefinitions <@> InputError.ArgumentsError
 
                 return { input with Arguments = arguments }
             }
