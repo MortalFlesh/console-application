@@ -29,9 +29,9 @@ module internal OptionsOperators =
 
 [<AutoOpen>]
 module internal Utils =
-    let debug message =
-        if MF.ConsoleStyle.Console.isDebug() then
-            MF.ConsoleStyle.Console.messagef "[DEBUG] %s" message
+    let debug (output: MF.ConsoleStyle.ConsoleStyle) message =
+        if output.IsDebug() then
+            output.Message("<c:gray>[DEBUG]</c> %s", message)
 
     let tee f a =
         f a

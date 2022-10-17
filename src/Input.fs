@@ -34,8 +34,9 @@ module Input =
         OptionDefinitions = []
     }
 
-    let rec internal parse allArgumentDefinitions definitionsToParse (input: ParsedInput) (args: InputValue list) =
+    let rec internal parse output allArgumentDefinitions definitionsToParse (input: ParsedInput) (args: InputValue list) =
         let (optionDefinitions: OptionsDefinitions, argumentDefinitions: ArgumentsDefinitions) = definitionsToParse
+        let debug = debug output
 
         match args with
         | [] -> Ok { input with UnfilledArgumentDefinitions = argumentDefinitions }
@@ -43,7 +44,7 @@ module Input =
             result {
                 let! (arguments, unfilledArgumentDefinitions) =
                     rawArguments
-                    |> Arguments.parse input.Arguments argumentDefinitions <@> InputError.ArgumentsError
+                    |> Arguments.parse output input.Arguments argumentDefinitions <@> InputError.ArgumentsError
 
                 return { input with Arguments = arguments; UnfilledArgumentDefinitions = unfilledArgumentDefinitions }
             }
@@ -92,7 +93,7 @@ module Input =
 
                 return!
                     rawArgs
-                    |> parse allArgumentDefinitions definitionsToParse parsedInput
+                    |> parse output allArgumentDefinitions definitionsToParse parsedInput
             }
 
     let internal prepareUnfilledArguments (unfilledArgumentDefinitions: UnfilledArgumentDefinitions) (input: Input) =

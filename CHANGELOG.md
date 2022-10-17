@@ -4,6 +4,10 @@
 ## Unreleased
 - [**BC**] Use net6.0
 - Update dependencies
+    - [**BC**] Use `ConsoleStyle` `3.0`
+        - Use `MF.ConsoleStyle.ConsoleStyle` as the `Output` for the ConsoleApplication
+        - `Verbosity` is not set globally anymore
+- Add abstraction over `ProgressBar` which handles `debug` verbosity better
 
 ## 2.0.0 - 2020-01-13
 - Update dependencies

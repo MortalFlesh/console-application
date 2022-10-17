@@ -150,7 +150,7 @@ module internal Commands =
             command |> Command.description
         ])
 
-    let showAvailable output commands =
+    let showAvailable (output: Output) commands =
         commands
         |> format
         |> output.GroupedOptions CommandName.NamespaceSeparator "Available commands:"

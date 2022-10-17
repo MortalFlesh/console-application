@@ -84,7 +84,7 @@ module MFConsoleApplication =
         let (|HasOption|_|) option (args: Args) =
             args |> Array.tryFind (Option.isMatching option)
 
-        let parse applicationOptions (commands: Commands): Args -> Result<Input * UnfilledArgumentDefinitions, ArgsError * CurrentCommand> =
+        let parse output applicationOptions (commands: Commands): Args -> Result<Input * UnfilledArgumentDefinitions, ArgsError * CurrentCommand> =
             fun args ->
                 match args |> List.ofArray with
                 | [] -> Ok (Input.empty, [])
@@ -99,8 +99,8 @@ module MFConsoleApplication =
                         let! (commandName, command) =
                             match commands |> Commands.find rawCommandName with
                             | ExactlyOne (commandName, command) -> Ok (commandName, command)
-                            | MoreThanOne (givenName, names) -> Error (ArgsError.AmbigousCommandFound (givenName, names))
-                            | NoCommand unknownName -> Error (ArgsError.CommandNotFound unknownName)
+                            | MoreThanOne (givenName, names) -> Result.Error (ArgsError.AmbigousCommandFound (givenName, names))
+                            | NoCommand unknownName -> Result.Error (ArgsError.CommandNotFound unknownName)
                             <!!*> currentCommand
 
                         let currentCommand: CurrentCommand = Some (commandName, command)
@@ -109,7 +109,7 @@ module MFConsoleApplication =
 
                         let! parsedInput =
                             rawArgs
-                            |> Input.parse command.Arguments definitions ParsedInput.empty <@> ArgsError.InputError <!!*> currentCommand
+                            |> Input.parse output command.Arguments definitions ParsedInput.empty <@> ArgsError.InputError <!!*> currentCommand
 
                         let input = {
                             Arguments = parsedInput.Arguments.Add(ArgumentNames.Command, ArgumentValue.Required (commandName |> CommandName.value))
@@ -130,14 +130,14 @@ module MFConsoleApplication =
                 let output = parts.Output
 
                 match args with
-                | Args.ContainsOption OptionsDefinitions.quiet -> output.SetVerbosity Verbosity.Quiet
+                | Args.ContainsOption OptionsDefinitions.quiet -> output.Verbosity <- Verbosity.Quiet
                 | Args.HasOption OptionsDefinitions.verbose verbosity ->
-                    match verbosity with
-                    // todo <later> - add -vvvv special debug mode, which will allow debuging of console-application directly - allow `debug` function
-                    | "-vvv" -> Verbosity.Debug
-                    | "-vv" -> Verbosity.VeryVerbose
-                    | _ -> Verbosity.Verbose
-                    |> output.SetVerbosity
+                    output.Verbosity <-
+                        match verbosity with
+                        // todo <later> - add -vvvv special debug mode, which will allow debuging of console-application directly - allow `debug` function
+                        | "-vvv" -> Verbosity.Debug
+                        | "-vv" -> Verbosity.VeryVerbose
+                        | _ -> Verbosity.Verbose
                 | _ -> ()
 
                 let args =
@@ -163,8 +163,8 @@ module MFConsoleApplication =
                             |> Help.showForCommand output parts.OptionDecorationLevel parts.ApplicationOptions commandName
 
                             Ok ExitCode.Success
-                        | MoreThanOne (givenName, names) -> Error (ArgsError.AmbigousCommandFound (givenName, names))
-                        | NoCommand unknownName -> Error (ArgsError.CommandNotFound unknownName)
+                        | MoreThanOne (givenName, names) -> Result.Error (ArgsError.AmbigousCommandFound (givenName, names))
+                        | NoCommand unknownName -> Result.Error (ArgsError.CommandNotFound unknownName)
                         <@> ConsoleApplicationError.ArgsError
                         <!!*> currentCommand
                 | Args.ContainsOption OptionsDefinitions.version ->
@@ -177,7 +177,7 @@ module MFConsoleApplication =
 
                     let! (input, unfilledArguments) =
                         args
-                        |> Args.parse parts.ApplicationOptions parts.Commands <!!!> ConsoleApplicationError.ArgsError
+                        |> Args.parse output parts.ApplicationOptions parts.Commands <!!!> ConsoleApplicationError.ArgsError
 
                     let commandName = input |> Input.getCommandName
                     let command = parts.Commands.[commandName]
@@ -205,9 +205,9 @@ module MFConsoleApplication =
                             |> command.Execute
                     with
                     | e ->
-                        return! Error (ConsoleApplicationError.ConsoleApplicationError e.Message) <!!*> currentCommand
+                        return! Result.Error (ConsoleApplicationError.ConsoleApplicationError e.Message) <!!*> currentCommand
             }
-        | Error error -> Error (error, currentCommand)
+        | Result.Error error -> Result.Error (error, currentCommand)
 
     let runResult args application =
         application
@@ -224,6 +224,11 @@ module MFConsoleApplication =
         let mutable shouldRun = true
         let mutable exitCode = 0
 
+        let output =
+            application
+            |> ConsoleApplication.output
+            |> Option.defaultValue Output.defaults
+
         let interactiveApplication =
             application
             |> ConsoleApplication.map (fun parts -> { parts with ApplicationInfo = ApplicationInfo.Hidden })
@@ -238,7 +243,7 @@ module MFConsoleApplication =
                 |> Commands.showAvailable parts.Output
             )
 
-            match Console.ask "Command:" with
+            match output.Ask "Command:" with
             | CommandNames.Exit -> shouldRun <- false
             | command ->
                 match run ((command :: args) |> List.toArray) interactiveApplication with

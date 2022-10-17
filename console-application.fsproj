@@ -25,6 +25,7 @@
     <Compile Include="src/Options.fs" />
     <Compile Include="src/Input.fs" />
     <Compile Include="src/Command.fs" />
+    <Compile Include="src/Progress.fs" />
     <Compile Include="src/Builder.fs" />
     <Compile Include="src/Render.fs" />
     <Compile Include="src/ConsoleApplication.fs" />

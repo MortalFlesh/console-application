@@ -38,7 +38,7 @@ module internal Help =
         ]
         |> List.fold String.replace help
 
-    let showForCommand output decorationLevel applicationOptions commandName (command: Command) =
+    let showForCommand (output: Output) decorationLevel applicationOptions commandName (command: Command) =
         let options = command.Options @ applicationOptions
 
         output.SimpleOptions "Description:" [
@@ -68,7 +68,7 @@ module internal Help =
             output.SimpleOptions "Help" [ [ help |> replaceHelpPlaceholders commandName ] ]
         )
 
-    let showSingleLine output applicationOptions (commandName, command) =
+    let showSingleLine (output: Output) applicationOptions (commandName, command) =
         // list [--raw] [--format FORMAT] [--] [<namespace>]\n
         let options = command.Options @ applicationOptions
 
@@ -84,16 +84,13 @@ module internal Error =
     let show (ConsoleApplication application) currentCommand error =
         match application with
         | Ok parts ->
-            let output = parts.Output
-            let printError = sprintf "%s\n" >> output.Error
-
             error
             |> ConsoleApplicationError.format
-            |> printError
+            |> parts.Output.Error
 
             currentCommand
-            |>! Help.showSingleLine output parts.ApplicationOptions
-        | Error e ->
+            |>! Help.showSingleLine parts.Output parts.ApplicationOptions
+        | Result.Error e ->
             e
             |> ConsoleApplicationError.format
-            |> Console.errorf "\n%s\n"
+            |> Output.defaults.Error

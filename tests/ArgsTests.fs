@@ -486,51 +486,46 @@ let provideArgs = seq {
         Description = "Simple option value with `=`"
         Command = "six"
         Argv = [| "--bar=Hello" |]
-        Expected = expect [
-            "bar", OptionValue.ValueRequired "Hello"
-        ][
-            "arg", ArgumentValue.Optional None
-        ]
+        Expected =
+            expect
+                [ "bar", OptionValue.ValueRequired "Hello" ]
+                [ "arg", ArgumentValue.Optional None ]
     }
     yield {
         Description = "Simple option value without `=`"
         Command = "six"
         Argv = [| "--bar"; "Hello" |]
-        Expected = expect [
-            "bar", OptionValue.ValueRequired "Hello"
-        ][
-            "arg", ArgumentValue.Optional None
-        ]
+        Expected =
+            expect
+                [ "bar", OptionValue.ValueRequired "Hello" ]
+                [ "arg", ArgumentValue.Optional None ]
     }
     yield {
         Description = "Shortcut option value with `=`"
         Command = "six"
         Argv = [| "-b=Hello" |]
-        Expected = expect [
-            "bar", OptionValue.ValueRequired "=Hello"
-        ][
-            "arg", ArgumentValue.Optional None
-        ]
+        Expected =
+            expect
+                [ "bar", OptionValue.ValueRequired "=Hello" ]
+                [ "arg", ArgumentValue.Optional None ]
     }
     yield {
         Description = "Shortcut option value without `=`"
         Command = "six"
         Argv = [| "-b"; "Hello" |]
-        Expected = expect [
-            "bar", OptionValue.ValueRequired "Hello"
-        ][
-            "arg", ArgumentValue.Optional None
-        ]
+        Expected =
+            expect
+                [ "bar", OptionValue.ValueRequired "Hello" ]
+                [ "arg", ArgumentValue.Optional None ]
     }
     yield {
         Description = "Shortcut option value without `=` and without any whitespace"
         Command = "six"
         Argv = [| "-bHello" |]
-        Expected = expect [
-            "bar", OptionValue.ValueRequired "Hello"
-        ][
-            "arg", ArgumentValue.Optional None
-        ]
+        Expected =
+            expect
+                [ "bar", OptionValue.ValueRequired "Hello" ]
+                [ "arg", ArgumentValue.Optional None ]
     }
     yield {
         Description = "Multiple shortcut options with single `-`"
@@ -539,13 +534,14 @@ let provideArgs = seq {
             "-fcWorld"
             "-b"; "Hello"
         |]
-        Expected = expect [
-            "foo", OptionValue.ValueNone
-            "bar", OptionValue.ValueRequired "Hello"
-            "cat", OptionValue.ValueOptional (Some "World")
-        ][
-            "arg", ArgumentValue.Optional None
-        ]
+        Expected =
+            expect
+                [
+                    "foo", OptionValue.ValueNone
+                    "bar", OptionValue.ValueRequired "Hello"
+                    "cat", OptionValue.ValueOptional (Some "World")
+                ]
+                [ "arg", ArgumentValue.Optional None ]
     }
     yield {
         Description = "Multiple shortcut options with single `-` - cat is eager and consume `f` shortuct"
@@ -554,22 +550,22 @@ let provideArgs = seq {
             "-cfWorld"
             "-b"; "Hello"
         |]
-        Expected = expect [
-            "bar", OptionValue.ValueRequired "Hello"
-            "cat", OptionValue.ValueOptional (Some "fWorld")
-        ][
-            "arg", ArgumentValue.Optional None
-        ]
+        Expected =
+            expect
+                [
+                    "bar", OptionValue.ValueRequired "Hello"
+                    "cat", OptionValue.ValueOptional (Some "fWorld")
+                ]
+                [ "arg", ArgumentValue.Optional None ]
     }
     yield {
         Description = "Multiple shortcut options with single `-` - cat is eager and consume `b` shortuct"
         Command = "six"
         Argv = [| "-cbWorld" |]
-        Expected = expect [
-            "cat", OptionValue.ValueOptional (Some "bWorld")
-        ][
-            "arg", ArgumentValue.Optional None
-        ]
+        Expected =
+            expect
+                [ "cat", OptionValue.ValueOptional (Some "bWorld") ]
+                [ "arg", ArgumentValue.Optional None ]
     }
     yield {
         Description = "Multiple shortcut options with single `-` - `f` has no value, so next letter should be another shortcut"
@@ -586,33 +582,34 @@ let provideArgs = seq {
         Description = "Multiple shortcut options with single `-` - `f` has no value, so next letter should be another shortcut - `c` has value after whitespace"
         Command = "six"
         Argv = [| "-fc"; "World" |]
-        Expected = expect [
-            "foo", OptionValue.ValueNone
-            "cat", OptionValue.ValueOptional (Some "World")
-        ][
-            "arg", ArgumentValue.Optional None
-        ]
+        Expected =
+            expect
+                [
+                    "foo", OptionValue.ValueNone
+                    "cat", OptionValue.ValueOptional (Some "World")
+                ]
+                [ "arg", ArgumentValue.Optional None ]
     }
     yield {
         Description = "Multiple shortcut options with single `-` - `f` has no value, so next letter should be another shortcut - `b` has value, so it consumes c and rest is argument"
         Command = "six"
         Argv = [| "-fbc"; "World" |]
-        Expected = expect [
-            "foo", OptionValue.ValueNone
-            "bar", OptionValue.ValueRequired "c"
-        ][
-            "arg", ArgumentValue.Optional (Some "World")
-        ]
+        Expected =
+            expect
+                [
+                    "foo", OptionValue.ValueNone
+                    "bar", OptionValue.ValueRequired "c"
+                ]
+                [ "arg", ArgumentValue.Optional (Some "World") ]
     }
     yield {
         Description = "No value option shortcut passed multiple times"
         Command = "six"
         Argv = [| "-ffffff" |]
-        Expected = expect [
-            "foo", OptionValue.ValueNone
-        ][
-            "arg", ArgumentValue.Optional None
-        ]
+        Expected =
+            expect
+                [ "foo", OptionValue.ValueNone ]
+                [ "arg", ArgumentValue.Optional None ]
     }
 
     //
@@ -731,9 +728,6 @@ let runConsoleApplication command argv =
             command "six" (commandSix setInput)
         }
         |> runResult argv
-
-    // reset verbosity (todo <later> - remove this, when verbosity is set not globally)
-    MF.ConsoleStyle.Verbosity.Normal |> MF.ConsoleStyle.Console.setVerbosity
 
     result
     |> Result.bind (fun _ ->

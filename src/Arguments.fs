@@ -342,8 +342,8 @@ module internal Arguments =
                     RestOfArgs = []
                 }
 
-    let parse (parsed: Arguments) (definitions: ArgumentsDefinitions) (rawArguments: InputValue list): Result<Arguments * UnfilledArgumentDefinitions, ArgumentsError> =
-        debug <| sprintf "Parse arguments after -- %A\n%-*A" rawArguments 58 (* 58 is lenght of debug line *) (definitions |> List.map Argument.nameValue)
+    let parse output (parsed: Arguments) (definitions: ArgumentsDefinitions) (rawArguments: InputValue list): Result<Arguments * UnfilledArgumentDefinitions, ArgumentsError> =
+        debug output <| sprintf "Parse arguments after -- %A\n%-*A" rawArguments 58 (* 58 is lenght of debug line *) (definitions |> List.map Argument.nameValue)
 
         let rec parseArgument rawArgs (parsed: Arguments) unfilledDefinitions =
             match rawArgs with
