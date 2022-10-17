@@ -2,6 +2,8 @@
 
 <!-- There is always Unreleased section on the top. Subsections (Add, Changed, Fix, Removed) should be Add as needed. -->
 ## Unreleased
+
+## 3.0.0 - 2022-10-17
 - [**BC**] Use net6.0
 - Update dependencies
     - [**BC**] Use `ConsoleStyle` `3.0`
