@@ -473,3 +473,23 @@ Help =
     |> String.concat "\n\n"
     |> Some
 ```
+
+## Tips
+
+Add `bin/console` file with following content to allow a simple entry point for your application
+
+```sh
+#!/usr/bin/env bash
+
+APP="my-console"
+NET="net6.0"
+
+CONSOLE="bin/Debug/$NET/$APP.dll"
+if [ ! -f "$CONSOLE" ]; then
+    CONSOLE="bin/Release/$NET/$APP.dll"
+fi
+
+dotnet "$CONSOLE" "$@"
+```
+
+Then just go by `bin/console list` or other commands.
