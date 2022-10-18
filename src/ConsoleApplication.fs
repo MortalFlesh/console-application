@@ -17,33 +17,33 @@ module MFConsoleApplication =
         let output = parts.Output
 
         let renderTitle () =
-            parts.Title
+            parts.Meta.Title
             |>! (ApplicationTitle.value >> output.MainTitle)
 
-        let name = parts.Name |> ApplicationName.value
+        let name = parts.Meta.Name |> ApplicationName.value
 
         match parts.ApplicationInfo with
         | ApplicationInfo.Hidden -> ()
         | ApplicationInfo.MainTitle -> renderTitle()
         | ApplicationInfo.OnlyNameAndVersion ->
-            match parts.Version with
+            match parts.Meta.Version with
             | Some (ApplicationVersion version) -> sprintf "%s <c:green><%s></c>" name version
             | _ -> name
             |> output.Message
         | ApplicationInfo.NameAndVersion ->
-            match parts.Version with
+            match parts.Meta.Version with
             | Some (ApplicationVersion version) -> sprintf "%s <%s>" name version
             | _ -> name
             |> output.Title
         | ApplicationInfo.Interactive ->
-            match parts.Version with
+            match parts.Meta.Version with
             | Some (ApplicationVersion version) -> sprintf "%s <%s>" name version
             | _ -> name
             |> sprintf "%s - interactive mode"
             |> output.Title
         | ApplicationInfo.All ->
             renderTitle()
-            match parts.Version with
+            match parts.Meta.Version with
             | Some (ApplicationVersion version) -> sprintf "%s <%s>" name version
             | _ -> name
             |> output.Title
@@ -99,8 +99,8 @@ module MFConsoleApplication =
                         let! (commandName, command) =
                             match commands |> Commands.find rawCommandName with
                             | ExactlyOne (commandName, command) -> Ok (commandName, command)
-                            | MoreThanOne (givenName, names) -> Result.Error (ArgsError.AmbigousCommandFound (givenName, names))
-                            | NoCommand unknownName -> Result.Error (ArgsError.CommandNotFound unknownName)
+                            | MoreThanOne (givenName, names) -> Error (ArgsError.AmbigousCommandFound (givenName, names))
+                            | NoCommand unknownName -> Error (ArgsError.CommandNotFound unknownName)
                             <!!*> currentCommand
 
                         let currentCommand: CurrentCommand = Some (commandName, command)
@@ -163,8 +163,8 @@ module MFConsoleApplication =
                             |> Help.showForCommand output parts.OptionDecorationLevel parts.ApplicationOptions commandName
 
                             Ok ExitCode.Success
-                        | MoreThanOne (givenName, names) -> Result.Error (ArgsError.AmbigousCommandFound (givenName, names))
-                        | NoCommand unknownName -> Result.Error (ArgsError.CommandNotFound unknownName)
+                        | MoreThanOne (givenName, names) -> Error (ArgsError.AmbigousCommandFound (givenName, names))
+                        | NoCommand unknownName -> Error (ArgsError.CommandNotFound unknownName)
                         <@> ConsoleApplicationError.ArgsError
                         <!!*> currentCommand
                 | Args.ContainsOption OptionsDefinitions.version ->
@@ -205,9 +205,9 @@ module MFConsoleApplication =
                             |> command.Execute
                     with
                     | e ->
-                        return! Result.Error (ConsoleApplicationError.ConsoleApplicationError e.Message) <!!*> currentCommand
+                        return! Error (ConsoleApplicationError.ConsoleApplicationError e.Message) <!!*> currentCommand
             }
-        | Result.Error error -> Result.Error (error, currentCommand)
+        | Error error -> Error (error, currentCommand)
 
     let runResult args application =
         application

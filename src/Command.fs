@@ -1,5 +1,7 @@
 namespace MF.ConsoleApplication
 
+open System
+open MF.ConsoleStyle
 open MF.ErrorHandling
 
 type InteractiveInput = {
@@ -163,13 +165,11 @@ module internal Commands =
         CommandDefinition.validate {
             Description = "Displays help for a command"
             Help =
-                [
+                Help.lines [
                     "The <c:green>{{command.name}}</c> command displays help for a given command:"
                     "        <c:green>dotnet {{command.full_name}} list</c>"
                     "    To display list of available commands, please use <c:green>list</c> command."
                 ]
-                |> String.concat "\n\n"
-                |> Some
             Arguments = [
                 Argument.optional "command_name" "The command name" (Some CommandNames.Help)
             ]
@@ -204,6 +204,117 @@ module internal Commands =
         let ignore2 _ = ignore
         helpCommand ignore2 ignore Map.empty
 
+    let aboutCommand (meta: ApplicationMeta) =
+        CommandDefinition.validate {
+            Description = "Displays information about the current project"
+            Help =
+                Help.lines [
+                    "The <c:green>{{command.name}}</c> command displays information about the current project:"
+                    "        <c:green>dotnet {{command.full_name}} about</c>"
+
+                    [
+                        "There are multiple sections shown in the output:"
+                        "  - <c:cyan>current project details/meta information</c>"
+                        "  - <c:green>environment</c>"
+                        "  - <c:orange>console application library</c>"
+                    ]
+                    |> List.map (sprintf "    %s")
+                    |> String.concat "\n"
+                ]
+            Arguments = []
+            Options = []
+            Initialize = None
+            Interact = None
+            Execute = fun (input, output) ->
+                let ``---`` =
+                    [ String.replicate 21 "-"; String.replicate 100 "-" ] |> List.map (sprintf "<c:gray>%s</c>")
+
+                let sectionHead = sprintf "<c:green|u>%s</c>"
+                let head = sprintf "<c:dark-yellow>%s</c>"
+
+                let section headSeparator title lines =
+                    [
+                        if headSeparator then ``---``
+                        [ sectionHead title ]
+                        ``---``
+                        yield!
+                            lines
+                            |> List.map (function
+                                | [] -> []
+                                | first :: rest -> head first :: rest
+                            )
+                    ]
+                let firstSection = section false
+                let section = section true
+
+                let appName = meta.Name |> ApplicationName.value
+
+                output.Tabs [
+                    { Tab.parseColor "cyan" appName with Value = meta.Version |> Option.map ApplicationVersion.value }
+
+                    { Tab.parseColor "green" ".NET Core" with Value = Some (Environment.Version |> sprintf "%A") }
+
+                    match meta with
+                    | { GitBranch = Some branch } -> { Tab.parseColor "dark-yellow" "Git Branch" with Value = Some branch }
+                    | { GitCommit = Some commit } -> { Tab.parseColor "dark-yellow" "Git Commit" with Value = Some commit }
+                    | _ -> ()
+
+                    { Tab.parseColor "orange" AssemblyVersionInformation.AssemblyProduct with
+                        Value = Some (
+                            sprintf "%s (%s)"
+                                AssemblyVersionInformation.AssemblyVersion
+                                AssemblyVersionInformation.AssemblyMetadata_createdAt[ 0 .. "yyyy-mm-dd".Length - 1 ]
+                        )
+                    }
+                ]
+
+                output.Table [] [
+                    yield! firstSection "Application" [
+                        [ "Name"; appName ]
+
+                        match meta.Version with
+                        | Some (ApplicationVersion version) -> [ "Version"; version ]
+                        | _ -> ()
+
+                        match meta.Description with
+                        | Some description -> [ "Description"; description ]
+                        | _ -> ()
+
+                        yield! meta.Meta |> List.rev
+                    ]
+
+                    yield! section "Environment" [
+                        [ ".NET Core"; Environment.Version |> sprintf "%A" ]
+                        [ "Command Line"; Environment.CommandLine ]
+                        [ "Current Directory"; Environment.CurrentDirectory ]
+                        [ "Machine Name"; Environment.MachineName ]
+                        [ "OS Version"; Environment.OSVersion |> sprintf "%A" ]
+                        [ "Processor Count"; Environment.ProcessorCount |> sprintf "%A" ]
+                    ]
+
+                    match meta with
+                    | { GitRepository = Some _ } | { GitBranch = Some _ } | { GitCommit = Some _ } ->
+                        yield!
+                            [
+                                meta.GitRepository |> Option.map (fun value -> [ "Repository"; value ])
+                                meta.GitBranch |> Option.map (fun value -> [ "Branch"; value ])
+                                meta.GitCommit |> Option.map (fun value -> [ "Commit"; value ])
+                            ]
+                            |> List.choose id
+                            |> section "Git"
+                    | _ -> ()
+
+                    yield! section AssemblyVersionInformation.AssemblyProduct [
+                        [ "Version"; AssemblyVersionInformation.AssemblyVersion ]
+                        [ "Commit"; AssemblyVersionInformation.AssemblyMetadata_gitcommit ]
+                        [ "Released"; AssemblyVersionInformation.AssemblyMetadata_createdAt[ 0 .. "yyyy-mm-dd".Length ]]
+                    ]
+                ]
+
+                ExitCode.Success
+        }
+        |> Result.orFail
+
     let private byNamespace namespaceValue (commands: Commands) =
         commands
         |> Map.filter (fun name _ ->
@@ -214,14 +325,12 @@ module internal Commands =
         CommandDefinition.validate {
             Description = "Lists commands"
             Help =
-                [
+                Help.lines [
                     "The <c:green>{{command.name}}</c> command lists all commands:"
                     "        <c:green>dotnet {{command.full_name}}</c>"
                     "    You can also display the commands for a specific namespace:"
                     "        <c:green>dotnet {{command.full_name}} test</c>"
                 ]
-                |> String.concat "\n\n"
-                |> Some
             Arguments = [
                 Argument.optional "namespace" "The namespace name" None
             ]

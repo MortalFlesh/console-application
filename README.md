@@ -160,6 +160,13 @@ Command: `dotnet example.dll my:first-command --help`
 | name | `name: string` | It will set a name of the application. (_This is part of ApplicationInfo._) |
 | version | `version: string` | It will set a version of the application. (_This is part of ApplicationInfo._) |
 | title | `title: string` | It will set a main title of the application. (_This is part of ApplicationInfo._) |
+| description | `description: string` | It will set a description of the application. (_It is visible in `about` command._) |
+| meta | `string * string` | It will add an application meta information. (_It is visible in `about` command._) |
+| | `(string * string) list` | It will add multiple application meta information. (_It is visible in `about` command._) |
+| git | `repository: string option * branch: string option * commit: string option` | It will register git meta information, which is visible in `about` command. |
+| gitRepository | `repository: string` | It will register git repository meta information, which is visible in `about` command. |
+| gitBranch | `branch: string` | It will register git branch meta information, which is visible in `about` command. |
+| gitCommit | `commit: string` | It will register git commit meta information, which is visible in `about` command. |
 | info | `ApplicationInfo` | It will define, how application info will be shown in commands output. (Default is `Hidden`) |
 | showOptions | `OptionDecorationLevel` | It will define, how options will be shown in the command help output. (Default is `Minimal`) |
 | command | `commandName: string`, `CommandDefinition` | It will register a command to the application. |
@@ -172,6 +179,7 @@ Command: `dotnet example.dll my:first-command --help`
 | | `Result<MF.ConsoleStyle.CustomTag, string> list` | It will handle results and register custom tags to the Output Style. |
 
 NOTES:
+- All parts of ApplicationInfo are shown in `about` command
 - All functions has the first argument for the `state: Definition`, but this is a current state of the application and it is passed implicitly in the background by computation expression.
 - All functions are optional to call. Those which _sets_ a value will override the previous definition.
 
@@ -460,23 +468,55 @@ dotnet path/to/console.dll list
 
             dotnet path/to/console.dll list test
 
+### About
+Show list of available commands.
+```sh
+dotnet path/to/console.dll list
+```
+
+    {application info}
+
+    Description:
+        Displays information about the current project.
+
+    Usage:
+        about [options]
+
+    Options:
+        -h, --help            Display this help message
+        -q, --quiet           Do not output any message
+        -V, --version         Display this application version
+        -n, --no-interaction  Do not ask any interactive question
+            --no-progress     Whether to disable all progress bars
+        -v|vv|vvv, --verbose  Increase the verbosity of messages
+
+    Help:
+        The about command displays information about the current project:
+
+            dotnet bin/Debug/net6.0/example.dll about about
+
+        There are multiple sections shown in the output:
+          - current project details/meta information
+          - environment
+          - console application library
+
 ### Create help message
 There are some placeholders which may help you to create a better help message.
 
 - `{{command.name}}` - The name of the current command.
 - `{{command.full_name}}` - The name of the current command including a relative path.
 
+**TIP**: You can use a `Help.lines` utility function to format your lines.
+
 This is a help, used in `list` command:
 ```fs
 Help =
-    [
+    Help.lines [
         "The <c:green>{{command.name}}</c> command lists all commands:"
         "        <c:green>dotnet {{command.full_name}}</c>"
         "    You can also display the commands for a specific namespace:"
         "        <c:green>dotnet {{command.full_name}} test</c>"
     ]
-    |> String.concat "\n\n"
-    |> Some
 ```
 
 ## Tips

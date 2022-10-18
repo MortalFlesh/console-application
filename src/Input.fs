@@ -156,6 +156,12 @@ module Input =
             | IsSet option _ -> true
             | _ -> false
 
+        /// Checks whether input has an option or fail with exception when option is not defined.
+        /// This is helpful for a Option.noValue.
+        let has option = function
+            | Has option _ -> true
+            | _ -> false
+
         /// Try to find an OptionValue in Input.Options, fail on exception when option is not defined.
         let tryGet option = function
             | Has option value -> Some value
