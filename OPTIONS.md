@@ -44,51 +44,51 @@ There are many ways how to access Options:
     ```fs
     let (optionValue: OptionValue option) = // raw value could be null or None or empty list
         match input with
-        | Input.HasOption "optionName" optionValue -> Some optionValue
+        | Input.Option.Has "optionName" optionValue -> Some optionValue
         | _ -> None
 
     let (optionValue: OptionValue option) = // raw value is neither null nor None nor empty list
         match input with
-        | Input.IsSetOption "optionName" optionValue -> Some optionValue
+        | Input.Option.IsSet "optionName" optionValue -> Some optionValue
         | _ -> None
     ```
     - All Input active patterns for matching Options
 
     | Active Pattern              | Description |
     | ---                         | ---         |
-    | _Input_.**IsOptionDefined** | Matched when given string is defined as option name. |
-    | _Input_.**HasOption**       | Matched when given string has any value in current Input (_default or from args_). |
-    | _Input_.**IsSetOption**     | Matched when input _has_ option AND that value is _not empty_. |
+    | _Input_._Option_.**IsDefined** | Matched when given string is defined as option name. |
+    | _Input_._Option_.**Has**       | Matched when given string has any value in current Input (_default or from args_). |
+    | _Input_._Option_.**IsSet**     | Matched when input _has_ option AND that value is _not empty_. |
 
     - Active patterns for accessing a value
 
     | Active Pattern                  | Description | Value |
     | ---                             | ---         | ---   |
-    | _Input_.**OptionValue**         | Matched when input _has_ option. (_Fail with exception when value is not set or it is a list._) | `string` |
-    | _Input_.**OptionOptionalValue** | Matched when input _has_ option AND it has a single value. | `string` |
-    | _Input_.**OptionListValue**     | Matched when input _has_ option. | `string list` |
+    | _Input_._Option_.**Value**         | Matched when input _has_ option. (_Fail with exception when value is not set or it is a list._) | `string` |
+    | _Input_._Option_.**OptionalValue** | Matched when input _has_ option AND it has a single value. | `string` |
+    | _Input_._Option_.**ListValue**     | Matched when input _has_ option. | `string list` |
 
 - Just get a value from `Input`
     ```fs
-    let optionValue: OptionValue option = input |> Input.getOption "optionName"
-    let optionValue: string = input |> Input.getOptionValue "optionName"    // or exception
-    let optionValue: string option = input |> Input.getOptionValueAsString "optionName"
-    let optionValue: int option = input |> Input.getOptionValueAsInt "optionName"   // or exception
-    let optionValue: int option = input |> Input.tryGetOptionValueAsInt "optionName"
-    let optionValue: string list = input |> Input.getOptionValueAsList "optionName"
+    let optionValue: OptionValue option = input |> Input.Option.get "optionName"
+    let optionValue: string = input |> Input.Option.value "optionName"    // or exception
+    let optionValue: string option = input |> Input.Option.asString "optionName"
+    let optionValue: int option = input |> Input.Option.asInt "optionName"   // or exception
+    let optionValue: int option = input |> Input.Option.tryValueAsInt "optionName"
+    let optionValue: string list = input |> Input.Option.asList "optionName"
     ```
     - All Input functions for accessing Options
 
-    | Function                           | Description |
-    | ---                                | ---         |
-    | _Input_.**tryGetOption**           | Returns an `OptionValue option`, when Input _has_ option. |
-    | _Input_.**getOption**              | Returns an `OptionValue`, when Input _has_ option OR fail with exception. |
-    | _Input_.**getOptionValue**         | Returns a `string` value from OptionValue, when Input _has_ option OR fail with exception. |
-    | _Input_.**getOptionValueAsString** | Returns a `string option` value from OptionValue, when Input _has_ option. |
-    | _Input_.**getOptionValueAsInt**    | Returns an `int option` value from OptionValue, when Input _has_ option. (_It fails with an exception when string value is not int._) |
-    | _Input_.**getOptionValueAsList**   | Returns an `string list` value from OptionValue, when Input _has_ option. (_It returns a list even for single values._) |
-    | _Input_.**tryGetOptionValueAsInt** | Returns an `int option` value from OptionValue, when Input _has_ option. (_It returns None when string value is not int._) |
-    | _Input_.**isOptionValueSet**       | Checks whether option has a value AND that value is _not empty_. |
+    | Function                         | Description |
+    | ---                              | ---         |
+    | _Input_._Option_.**tryGet**      | Returns an `OptionValue option`, when Input _has_ option. |
+    | _Input_._Option_.**get**         | Returns an `OptionValue`, when Input _has_ option OR fail with exception. |
+    | _Input_._Option_.**value**       | Returns a `string` value from OptionValue, when Input _has_ option OR fail with exception. |
+    | _Input_._Option_.**asString**    | Returns a `string option` value from OptionValue, when Input _has_ option. |
+    | _Input_._Option_.**asInt**       | Returns an `int option` value from OptionValue, when Input _has_ option. (_It fails with an exception when string value is not int._) |
+    | _Input_._Option_.**asList**      | Returns an `string list` value from OptionValue, when Input _has_ option. (_It returns a list even for single values._) |
+    | _Input_._Option_.**tryAsInt**    | Returns an `int option` value from OptionValue, when Input _has_ option. (_It returns None when string value is not int._) |
+    | _Input_._Option_.**isValueSet**  | Checks whether option has a value AND that value is _not empty_. |
 
     Note: All functions above will fail with an exception when given "option" is not defined.
 
@@ -105,8 +105,6 @@ There are many ways how to access Options:
 |                    | -           | No      | _false_        |
 | ValueRequired      | Yes         | Yes     | from Args      |
 |                    | Yes         | No      | default        |
-|                    | No          | Yes     | from Args      |
-|                    | No          | No      | -              |
 | ValueOptional      | Yes         | Yes     | Some from Args |
 |                    | Yes         | No      | Some default   |
 |                    | No          | Yes     | Some from Args |

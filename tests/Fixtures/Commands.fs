@@ -19,8 +19,8 @@ let commandOne executeCallback: CommandDefinition =
         Interact = Some (fun ({ Input = input }, output) ->
             let input =
                 match input with
-                | Input.IsSetOption "message" _ -> input
-                | _ -> "from-interaction" |> Input.setOptionValue input "message"
+                | Input.Option.IsSet "message" _ -> input
+                | _ -> "from-interaction" |> Input.Option.set input "message"
 
             (input, output)
         )
@@ -98,8 +98,8 @@ let commandFive executeCallback: CommandDefinition =
         Interact = Some (fun ({ Input = input; Ask = ask }, output) ->
             let input =
                 match input with
-                | Input.HasArgument "mandatoryArg" _ -> input
-                | _ -> ask "Add mandatory argument" |> Input.setArgumentValue input "mandatoryArg"
+                | Input.Argument.Has "mandatoryArg" _ -> input
+                | _ -> ask "Add mandatory argument" |> Input.Argument.set input "mandatoryArg"
 
             (input, output)
         )
