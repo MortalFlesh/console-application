@@ -194,9 +194,11 @@ module CommandNames =
     [<Literal>]
     let Help = "help"
     [<Literal>]
+    let About = "about"
+    [<Literal>]
     let Exit = "exit"
 
-    let internal all = [ List; Help; Exit ]
+    let internal all = [ List; Help; About; Exit ]
 
 [<RequireQualifiedAccess>]
 module internal CommandName =
@@ -211,15 +213,15 @@ module internal CommandName =
             |> Name.create [ NamespaceSeparator; "-" ] [ " "; NamespaceSeparator + NamespaceSeparator ] [ NamespaceSeparator ]
             <!> CommandName
             <@> CommandNameError.NameError
-        | invalidName -> Result.Error (CommandNameError.Invalid invalidName)
+        | invalidName -> Error (CommandNameError.Invalid invalidName)
 
     let create = function
-        | ArgumentNames.Command -> Result.Error (CommandNameError.Reserved ArgumentNames.Command)
-        | name when CommandNames.all |> List.contains name -> Result.Error (CommandNameError.Reserved name)
+        | ArgumentNames.Command -> Error (CommandNameError.Reserved ArgumentNames.Command)
+        | name when CommandNames.all |> List.contains name -> Error (CommandNameError.Reserved name)
         | name -> name |> createName
 
     let createInRuntime = function
-        | ArgumentNames.Command -> Result.Error (CommandNameError.Invalid ArgumentNames.Command)
+        | ArgumentNames.Command -> Error (CommandNameError.Invalid ArgumentNames.Command)
         | name -> name |> createName
 
     let value (CommandName (Name name)) = name
@@ -273,6 +275,18 @@ type ApplicationTitle = internal ApplicationTitle of string
 [<RequireQualifiedAccess>]
 module internal ApplicationTitle =
     let value (ApplicationTitle title) = title
+
+type ApplicationMeta = {
+    Name: ApplicationName
+    Version: ApplicationVersion option
+    Title: ApplicationTitle option
+    Description: string option
+    GitRepository: string option
+    GitBranch: string option
+    GitCommit: string option
+    CreatedAt: System.DateTime option
+    Meta: string list list
+}
 
 // Errors
 // ***************************
