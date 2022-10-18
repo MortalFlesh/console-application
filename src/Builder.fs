@@ -155,9 +155,32 @@ type ConsoleApplicationBuilder<'r> internal (buildApplication: Definition -> 'r)
             let output = parts.Output |> update
             { parts with Output = output; Ask = output.Ask }
 
+    /// This will override a style in the Output (ConsoleStyle), and even a custom tags, which are defined there.
     [<CustomOperation("withStyle")>]
     member _.WithStyle(state, style): Definition =
         state >>* fun parts -> parts.Output.ChangeStyle style
+
+    [<CustomOperation("withCustomTags")>]
+    member _.WithCustomTags(state, customTags): Definition =
+        state >>* fun parts -> parts.Output.UpdateStyle (fun style ->
+            { style with CustomTags = style.CustomTags @ customTags }
+        )
+
+    [<CustomOperation("withCustomTags")>]
+    member _.WithCustomTags(state, customTags): Definition =
+        state >>= fun parts ->
+            result {
+                let! customTags =
+                    customTags
+                    |> Validation.ofResults
+                    <@> (CommandDefinitionError.InvalidCustomTags >> ConsoleApplicationError.CommandDefinitionError)
+
+                parts.Output.UpdateStyle (fun style ->
+                    { style with CustomTags = style.CustomTags @ customTags }
+                )
+
+                return parts
+            }
 
 [<RequireQualifiedAccess>]
 module internal ConsoleApplicationBuilder =

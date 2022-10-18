@@ -483,4 +483,61 @@ let defineCommandTests =
 
                     Expect.equal result expected description
             )
+
+        testCase "Test should just compile with all keywords" <| fun _ ->
+            let customTag: MF.ConsoleStyle.CustomTag = { Tag = MF.ConsoleStyle.TagName "tag"; Markup = MF.ConsoleStyle.MarkupString "<c:yellow>" }
+
+            use buffer = new MF.ConsoleStyle.Output.BufferOutput(MF.ConsoleStyle.Verbosity.Normal)
+            let console = MF.ConsoleStyle.ConsoleStyle(buffer)
+
+            let app =
+                consoleApplication {
+                    title "MF.ConsoleApplication"
+                    name "Example"
+                    version "1.0.0"
+                    info ApplicationInfo.NameAndVersion
+
+                    useOutput console
+
+                    withStyle MF.ConsoleStyle.Style.defaults
+                    withCustomTags [
+                        customTag
+                    ]
+                    withCustomTags [
+                        MF.ConsoleStyle.CustomTag.createAndParseMarkup (MF.ConsoleStyle.TagName "name") "<c:black|bg:cyan>"
+                    ]
+
+                    defaultCommand "run"
+
+                    command "run" {
+                        Description = "Test command."
+                        Help = None
+                        Arguments = []
+                        Options = []
+                        Initialize = None
+                        Interact = None
+                        Execute = fun (input, output) ->
+                            output.Title("Command <name>%s</name> %s", "run", "is running")
+                            ExitCode.Success
+                    }
+                }
+                |> runResult [| |]
+
+            Expect.equal app (Ok ExitCode.Success) "Run command with most of the options"
+
+            let output =
+                (buffer.Fetch() |> console.RemoveMarkup).Split "\n"
+                |> List.ofArray
+
+            let expectedOutput =
+                [
+                    "Example <1.0.0>"
+                    "==============="
+                    ""
+                    "Command run is running"
+                    "======================"
+                    ""
+                    ""
+                ]
+            Expect.equal output expectedOutput "Command should run with buffer output."
     ]

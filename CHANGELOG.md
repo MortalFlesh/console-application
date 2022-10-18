@@ -6,6 +6,7 @@
 - Add `consoleApplication` keywords
     - `updateOutput`
     - `withStyle`
+    - `withCustomTags`
 - [**BC**] Require a default value for a `Option.required`
 
 ## 3.1.0 - 2022-10-17

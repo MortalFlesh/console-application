@@ -350,12 +350,14 @@ module internal OptionDefinitionError =
 type CommandDefinitionError =
     | ArgumentDefinitionError of ArgumentDefinitionError list
     | OptionDefinitionError of OptionDefinitionError list
+    | InvalidCustomTags of string list
 
 [<RequireQualifiedAccess>]
 module internal CommandDefinitionError =
     let format = function
         | CommandDefinitionError.ArgumentDefinitionError errors -> errors |> List.map ArgumentDefinitionError.format
         | CommandDefinitionError.OptionDefinitionError errors -> errors |> List.map OptionDefinitionError.format
+        | CommandDefinitionError.InvalidCustomTags errors -> errors |> List.map (sprintf "Invalid Custom Tag definition: %s")
 
 // Runtime
 

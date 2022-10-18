@@ -168,6 +168,8 @@ Command: `dotnet example.dll my:first-command --help`
 | useAsk | `question: string -> answer: string` | It will override an Ask function, which is used in `Interact` life-cycle stage. (_Default is implemented by [ConsoleStyle](https://github.com/MortalFlesh/console-style#ask))_ |
 | updateOutput | `Output -> Output` | Function which allows to change the output (set style, different outputInterface for a ConsoleStyle and more) |
 | withStyle | `MF.ConsoleStyle.Style` | A style which will be set to the `Output`. |
+| withCustomTags | `MF.ConsoleStyle.CustomTag list` | It will register custom tags to the Output Style. |
+| | `Result<MF.ConsoleStyle.CustomTag, string> list` | It will handle results and register custom tags to the Output Style. |
 
 NOTES:
 - All functions has the first argument for the `state: Definition`, but this is a current state of the application and it is passed implicitly in the background by computation expression.
