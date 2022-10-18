@@ -68,6 +68,13 @@ type ConsoleApplicationBuilder<'r> internal (buildApplication: Definition -> 'r)
     let (<!>) state f =
         state >>= (f >> Ok)
 
+    let (>>*) (Definition state as definition) f: Definition =
+        match state with
+        | Ok parts ->
+            f parts
+            definition
+        | _ -> definition
+
     member __.Yield (_): Definition =
         DefinitionParts.defaults
         |> Ok
@@ -141,6 +148,16 @@ type ConsoleApplicationBuilder<'r> internal (buildApplication: Definition -> 'r)
     [<CustomOperation("useAsk")>]
     member __.UseAsk(state, ask): Definition =
         state <!> fun parts -> { parts with Ask = ask }
+
+    [<CustomOperation("updateOutput")>]
+    member _.UpdateOutput(state, update: Output -> Output): Definition =
+        state <!> fun parts ->
+            let output = parts.Output |> update
+            { parts with Output = output; Ask = output.Ask }
+
+    [<CustomOperation("withStyle")>]
+    member _.WithStyle(state, style): Definition =
+        state >>* fun parts -> parts.Output.ChangeStyle style
 
 [<RequireQualifiedAccess>]
 module internal ConsoleApplicationBuilder =

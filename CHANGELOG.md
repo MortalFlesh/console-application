@@ -3,6 +3,9 @@
 <!-- There is always Unreleased section on the top. Subsections (Add, Changed, Fix, Removed) should be Add as needed. -->
 ## Unreleased
 - Use `green` instead of a `dark-green`
+- Add `consoleApplication` keywords
+    - `updateOutput`
+    - `withStyle`
 
 ## 3.1.0 - 2022-10-17
 - Show multiple errors instead of a first one, if there are more than one
