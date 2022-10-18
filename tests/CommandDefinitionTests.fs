@@ -143,7 +143,7 @@ let provideOptionDefinitions = seq {
     yield {
         Description = "Option with empty name"
         Options = [
-            Option.required "" None "With empty name" (Some "default")
+            Option.required "" None "With empty name" "default"
         ]
         Argv = [| |]
         Expected =

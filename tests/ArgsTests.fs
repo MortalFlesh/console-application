@@ -564,7 +564,10 @@ let provideArgs = seq {
         Argv = [| "-cbWorld" |]
         Expected =
             expect
-                [ "cat", OptionValue.ValueOptional (Some "bWorld") ]
+                [
+                    "bar", OptionValue.ValueRequired ""
+                    "cat", OptionValue.ValueOptional (Some "bWorld")
+                ]
                 [ "arg", ArgumentValue.Optional None ]
     }
     yield {
@@ -586,6 +589,7 @@ let provideArgs = seq {
             expect
                 [
                     "foo", OptionValue.ValueNone
+                    "bar", OptionValue.ValueRequired ""
                     "cat", OptionValue.ValueOptional (Some "World")
                 ]
                 [ "arg", ArgumentValue.Optional None ]
@@ -608,7 +612,10 @@ let provideArgs = seq {
         Argv = [| "-ffffff" |]
         Expected =
             expect
-                [ "foo", OptionValue.ValueNone ]
+                [
+                    "foo", OptionValue.ValueNone
+                    "bar", OptionValue.ValueRequired ""
+                ]
                 [ "arg", ArgumentValue.Optional None ]
     }
 
@@ -704,6 +711,52 @@ let provideArgs = seq {
             "argumentList", ArgumentValue.Array []
         ]
     }
+
+    // Cases for a common scenarious
+    yield {
+        Description = "Use command 7 without any input"
+        Command = "seven"
+        Argv = [| |]
+        Expected = expect [
+            "api-url", OptionValue.ValueRequired "https://api"
+        ] [
+            "arg", ArgumentValue.Optional None
+        ]
+    }
+    yield {
+        Description = "Use command 7 with force and stdout as output"
+        Command = "seven"
+        Argv = [| "-fo" |]
+        Expected = expect [
+            "api-url", OptionValue.ValueRequired "https://api"
+            "force", OptionValue.ValueNone
+            "output", OptionValue.ValueOptional None
+        ] [
+            "arg", ArgumentValue.Optional None
+        ]
+    }
+    yield {
+        Description = "Use command 7 with output to the file and arg"
+        Command = "seven"
+        Argv = [| "-o"; "output.txt"; "arg" |]
+        Expected = expect [
+            "api-url", OptionValue.ValueRequired "https://api"
+            "output", OptionValue.ValueOptional (Some "output.txt")
+        ] [
+            "arg", ArgumentValue.Optional (Some "arg")
+        ]
+    }
+    yield {
+        Description = "Use command 7 with empty api-url option"
+        Command = "seven"
+        Argv = [| "--api-url"; "--"; "arg" |]
+        Expected =
+            OptionsError.RequiredValueNotSet "api-url"
+            |> InputError.OptionsError
+            |> ArgsError.InputError
+            |> ConsoleApplicationError.ArgsError
+            |> ExpectedError
+    }
 }
 
 let runConsoleApplication command argv =
@@ -726,6 +779,7 @@ let runConsoleApplication command argv =
             command "four" (commandFour setInput)
             command "five" (commandFive setInput)
             command "six" (commandSix setInput)
+            command "seven" (commandSeven setInput)
         }
         |> runResult argv
 

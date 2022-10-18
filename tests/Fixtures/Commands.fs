@@ -11,7 +11,7 @@ let commandOne executeCallback: CommandDefinition =
             Argument.optional "optionalArg" "Optional argument" (Some "default")
         ]
         Options = [
-            Option.required "opt1" (Some "o") "Option one" (Some "opt1-default-value")
+            Option.required "opt1" (Some "o") "Option one" "opt1-default-value"
             Option.optional "opt2" (Some "O") "Option two" None
             Option.optional "message" None "Message option" None
         ]
@@ -57,7 +57,7 @@ let commandThree executeCallback: CommandDefinition =
             Argument.optionalArray "argumentList" "Argument list" None
         ]
         Options = [
-            Option.required "opt1" (Some "o") "Option one" (Some "opt1-default-value")
+            Option.required "opt1" (Some "o") "Option one" "opt1-default-value"
             Option.requiredArray "item" (Some "i") "Items" (Some ["foo"])
         ]
         Initialize = None
@@ -117,8 +117,27 @@ let commandSix executeCallback: CommandDefinition =
         ]
         Options = [
             Option.noValue "foo" (Some "f") ""
-            Option.required "bar" (Some "b") "" None
+            Option.required "bar" (Some "b") "" ""
             Option.optional "cat" (Some "c") "" None
+        ]
+        Initialize = None
+        Interact = None
+        Execute = fun (input, output) ->
+            executeCallback input
+            ExitCode.Success
+    }
+
+let commandSeven executeCallback: CommandDefinition =
+    {
+        Description = "Test command 7"
+        Help = None
+        Arguments = [
+            Argument.optional "arg" "Optional argument" None
+        ]
+        Options = [
+            Option.noValue "force" (Some "f") ""
+            Option.required "api-url" None "" "https://api"
+            Option.optional "output" (Some "o") "If specified, output goes to the file, if just presented stdout is used." None
         ]
         Initialize = None
         Interact = None

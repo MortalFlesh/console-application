@@ -6,6 +6,7 @@
 - Add `consoleApplication` keywords
     - `updateOutput`
     - `withStyle`
+- [**BC**] Require a default value for a `Option.required`
 
 ## 3.1.0 - 2022-10-17
 - Show multiple errors instead of a first one, if there are more than one

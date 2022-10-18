@@ -9,7 +9,7 @@ type OptionDecorationLevel =
 [<RequireQualifiedAccess>]
 type OptionValueDefinition =
     | ValueNone
-    | ValueRequired of string option
+    | ValueRequired of string
     | ValueOptional of string option
     | ValueIsArray of (string list) option
     | ValueRequiredArray of (string list) option
@@ -312,7 +312,7 @@ module internal OptionsDefinitions =
 
                 match option.Value with
                 | OptionValueDefinition.ValueNone -> ("", false, None)
-                | OptionValueDefinition.ValueRequired defaultValue -> (sprintf "=%s" nameUpper, false, defaultValue |> Option.map (sprintf "%A"))
+                | OptionValueDefinition.ValueRequired defaultValue -> (sprintf "=%s" nameUpper, false, defaultValue |> sprintf "%A" |> Some)
                 | OptionValueDefinition.ValueOptional defaultValue -> (sprintf "[=%s]" nameUpper, false, defaultValue |> Option.map (sprintf "%A"))
                 | OptionValueDefinition.ValueIsArray defaultValue -> (sprintf "[=%s]" nameUpper, true, defaultValue |> Option.map (sprintf "%A"))
                 | OptionValueDefinition.ValueRequiredArray defaultValue -> (sprintf "=%s" nameUpper, true, defaultValue |> Option.map (sprintf "%A"))
@@ -539,7 +539,7 @@ module internal Options =
                 | _ ->
                     match definition.Value with
                     | OptionValueDefinition.ValueNone -> options
-                    | OptionValueDefinition.ValueRequired defaultValue -> defaultValue |> setDefault definition.Name OptionValue.ValueRequired options
+                    | OptionValueDefinition.ValueRequired defaultValue -> Some defaultValue |> setDefault definition.Name OptionValue.ValueRequired options
                     | OptionValueDefinition.ValueOptional defaultValue -> defaultValue |> setDefault definition.Name (Some >> OptionValue.ValueOptional) options
                     | OptionValueDefinition.ValueIsArray defaultValues -> defaultValues |> setDefault definition.Name OptionValue.ValueIsArray options
                     | OptionValueDefinition.ValueRequiredArray defaultValues -> defaultValues |> setDefault definition.Name OptionValue.ValueRequiredArray options
