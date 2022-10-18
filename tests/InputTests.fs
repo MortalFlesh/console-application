@@ -17,14 +17,14 @@ let provideArgsHasOption = seq {
     // cases without separator --
     //
     yield {
-        Description = "Empty options with interaction"
+        Description = "Empty options with interaction - should not exists"
         Argv = [| |]
         Option = "opt2"
         ExpectedExists = None
         ExpectedWithValue = None
     }
     yield {
-        Description = "Empty options with interaction"
+        Description = "Empty options with interaction - should exists"
         Argv = [| |]
         Option = "message"
         ExpectedExists = Some (OptionValue.ValueOptional (Some "from-interaction"))
@@ -130,14 +130,14 @@ let provideArgsHasOption = seq {
     // cases with no-interaction
     //
     yield {
-        Description = "No arguments and empty options with no-interaction shortuct"
+        Description = "No arguments and empty options with no-interaction shortuct - should not exists"
         Argv = [| |]
         Option = "no-interaction"
         ExpectedExists = None
         ExpectedWithValue = None
     }
     yield {
-        Description = "No arguments and empty options with no-interaction shortuct"
+        Description = "No arguments and empty options with no-interaction shortuct - should exists"
         Argv = [| "-n" |]
         Option = "no-interaction"
         ExpectedExists = Some OptionValue.ValueNone
@@ -176,53 +176,55 @@ let runConsoleApplication argv =
 [<Tests>]
 let ``input should have options`` =
     testList "ConsoleApplication - input has option" [
-        testCase "from console args" <| fun _ ->
+        yield!
             provideArgsHasOption
-            |> Seq.iter (fun { Argv = argv; Option = option; ExpectedExists = expected; Description = description } ->
-                let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
+            |> Seq.map (fun { Argv = argv; Option = option; ExpectedExists = expected; Description = description } ->
+                testCase $"from console args - {description}" <| fun _ ->
+                    let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
 
-                let input = runConsoleApplication (argv |> Array.append [| "argument" |])
-                let description = sprintf "%s\nOptions: %A" description input.Options
+                    let input = runConsoleApplication (argv |> Array.append [| "argument" |])
+                    let description = sprintf "%s\nOptions: %A" description input.Options
 
-                let result =
-                    match input with
-                    | Input.HasOption option value -> Some value
-                    | _ -> None
+                    let result =
+                        match input with
+                        | Input.HasOption option value -> Some value
+                        | _ -> None
 
-                let resultValue =
-                    try Some (input |> Input.getOption option)
-                    with
-                    | _ -> None
+                    let resultValue =
+                        try Some (input |> Input.getOption option)
+                        with
+                        | _ -> None
 
-                Expect.equal result expected description
-                Expect.equal resultValue expected description
+                    Expect.equal result expected description
+                    Expect.equal resultValue expected description
             )
     ]
 
 [<Tests>]
 let ``input should have option with value`` =
     testList "ConsoleApplication - is set option in input" [
-        testCase "from console args" <| fun _ ->
+        yield!
             provideArgsHasOption
-            |> Seq.iter (fun { Argv = argv; Option = option; ExpectedExists = expectedValue; ExpectedWithValue = expected; Description = description } ->
-                let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
+            |> Seq.map (fun { Argv = argv; Option = option; ExpectedExists = expectedValue; ExpectedWithValue = expected; Description = description } ->
+                testCase $"from console args - {description}" <| fun _ ->
+                    let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
 
-                let input = runConsoleApplication (argv |> Array.append [| "argument" |])
-                let description = sprintf "%s\nOptions: %A" description input.Options
+                    let input = runConsoleApplication (argv |> Array.append [| "argument" |])
+                    let description = sprintf "%s\nOptions: %A" description input.Options
 
-                let result =
-                    match input with
-                    | Input.IsSetOption option value -> Some value
-                    | _ -> None
+                    let result =
+                        match input with
+                        | Input.IsSetOption option value -> Some value
+                        | _ -> None
 
-                let resultValue =
-                    try Some (input |> Input.getOption option)
-                    with
-                    | _ -> None
+                    let resultValue =
+                        try Some (input |> Input.getOption option)
+                        with
+                        | _ -> None
 
-                Expect.equal result expected description
-                Expect.equal resultValue expectedValue description
-            )
+                    Expect.equal result expected description
+                    Expect.equal resultValue expectedValue description
+                )
     ]
 
 type ArgsHasArgument = {
@@ -275,22 +277,23 @@ let provideArgsHasArgument = seq {
 [<Tests>]
 let ``input should have arguments`` =
     testList "ConsoleApplication - input has argument" [
-        testCase "from console args" <| fun _ ->
+        yield!
             provideArgsHasArgument
-            |> Seq.iter (fun { Argv = argv; Argument = argument; Expected = expected; Description = description } ->
-                let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
+            |> Seq.map (fun { Argv = argv; Argument = argument; Expected = expected; Description = description } ->
+                testCase $"from console args - {description}" <| fun _ ->
+                    let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
 
-                let input = runConsoleApplication argv
-                let description = sprintf "%s\nArguments: %A" description input.Arguments
+                    let input = runConsoleApplication argv
+                    let description = sprintf "%s\nArguments: %A" description input.Arguments
 
-                let result =
-                    match input with
-                    | Input.HasArgument argument value -> Some value
-                    | _ -> None
+                    let result =
+                        match input with
+                        | Input.HasArgument argument value -> Some value
+                        | _ -> None
 
-                let resultValue = input |> Input.getArgument argument
+                    let resultValue = input |> Input.getArgument argument
 
-                Expect.equal result expected description
-                Expect.equal (Some resultValue) expected description
+                    Expect.equal result expected description
+                    Expect.equal (Some resultValue) expected description
             )
     ]

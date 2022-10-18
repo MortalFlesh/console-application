@@ -739,26 +739,27 @@ let runConsoleApplication command argv =
 [<Tests>]
 let parseArgsTests =
     testList "ConsoleApplication - parsing input" [
-        testCase "from console args" <| fun _ ->
+        yield!
             provideArgs
-            |> Seq.iter (fun { Command = command; Argv = argv; Expected = expected; Description = description } ->
-                let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
+            |> Seq.map (fun { Command = command; Argv = argv; Expected = expected; Description = description } ->
+                testCase $"from console args - {description}" <| fun _ ->
+                    let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
 
-                let expected =
-                    match expected with
-                    | Input expectedInput -> Input { expectedInput with Arguments = expectedInput.Arguments.Add("command", ArgumentValue.Required command)}
-                    | ExpectedError e -> ExpectedError e
+                    let expected =
+                        match expected with
+                        | Input expectedInput -> Input { expectedInput with Arguments = expectedInput.Arguments.Add("command", ArgumentValue.Required command)}
+                        | ExpectedError e -> ExpectedError e
 
-                let result = runConsoleApplication command argv
-                let description = sprintf "%s\nResult:\n%A\n" description (result |> Result.map (fun input -> { input with ArgumentDefinitions = []; OptionDefinitions = [] }))
+                    let result = runConsoleApplication command argv
+                    let description = sprintf "%s\nResult:\n%A\n" description (result |> Result.map (fun input -> { input with ArgumentDefinitions = []; OptionDefinitions = [] }))
 
-                match result, expected with
-                | Ok result, Input expected ->
-                    Expect.equal result.Options expected.Options description
-                    Expect.equal result.Arguments expected.Arguments description
-                | Error result, ExpectedError expected ->
-                    Expect.equal result expected description
-                | _ ->
-                    failtestf "Unexpected case ...\n%A" description
+                    match result, expected with
+                    | Ok result, Input expected ->
+                        Expect.equal result.Options expected.Options description
+                        Expect.equal result.Arguments expected.Arguments description
+                    | Error result, ExpectedError expected ->
+                        Expect.equal result expected description
+                    | _ ->
+                        failtestf "Unexpected case ...\n%A" description
             )
     ]

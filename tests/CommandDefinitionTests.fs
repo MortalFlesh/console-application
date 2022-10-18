@@ -104,7 +104,7 @@ let provideArgumentDefinitions = seq {
             |> Error
     }
     yield {
-        Description = "Optional argument before required"
+        Description = "Optional argument before required - with array"
         Arguments = [
             Argument.required "mandatory" "Mandatory argument"
             Argument.optional "optional" "Optional argument" None
@@ -448,36 +448,39 @@ let runConsoleApplication =
 [<Tests>]
 let defineCommandTests =
     testList "ConsoleApplication - define command" [
-        testCase "arguments" <| fun _ ->
+        yield!
             provideArgumentDefinitions
-            |> Seq.iter (fun { Arguments = arguments; Argv = argv; Expected = expected; Description = description } ->
-                let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
+            |> Seq.map (fun { Arguments = arguments; Argv = argv; Expected = expected; Description = description } ->
+                testCase $"arguments - {description}" <| fun _ ->
+                    let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
 
-                let result = runConsoleApplication arguments [] argv
-                let description = sprintf "%s\nResult:\n%A\n" description result
+                    let result = runConsoleApplication arguments [] argv
+                    let description = sprintf "%s\nResult:\n%A\n" description result
 
-                Expect.equal result expected description
+                    Expect.equal result expected description
             )
 
-        testCase "options" <| fun _ ->
+        yield!
             provideOptionDefinitions
-            |> Seq.iter (fun { Options = options; Argv = argv; Expected = expected; Description = description } ->
-                let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
+            |> Seq.map (fun { Options = options; Argv = argv; Expected = expected; Description = description } ->
+                testCase $"options - {description}" <| fun _ ->
+                    let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
 
-                let result = runConsoleApplication [] options argv
-                let description = sprintf "%s\nResult:\n%A\n" description result
+                    let result = runConsoleApplication [] options argv
+                    let description = sprintf "%s\nResult:\n%A\n" description result
 
-                Expect.equal result expected description
+                    Expect.equal result expected description
             )
 
-        testCase "commandNames" <| fun _ ->
+        yield!
             provideCommandName
-            |> Seq.iter (fun { CommandName = name; Argv = argv; Expected = expected; Description = description } ->
-                let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
+            |> Seq.map (fun { CommandName = name; Argv = argv; Expected = expected; Description = description } ->
+                testCase $"commandNames - {description}" <| fun _ ->
+                    let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
 
-                let result = runConsoleApplicationWithCommandName name None [] [] argv
-                let description = sprintf "%s\nResult:\n%A\n" description result
+                    let result = runConsoleApplicationWithCommandName name None [] [] argv
+                    let description = sprintf "%s\nResult:\n%A\n" description result
 
-                Expect.equal result expected description
+                    Expect.equal result expected description
             )
     ]
