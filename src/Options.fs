@@ -331,7 +331,7 @@ module internal OptionsDefinitions =
                 ]
                 |> String.concat " "
 
-            [ sprintf "<c:dark-green>%s--%s%s</c>" shortcut optionName optionValue; description ]
+            [ sprintf "<c:green>%s--%s%s</c>" shortcut optionName optionValue; description ]
         )
 
     let private fromRaw (option: RawOptionDefinition): Option =

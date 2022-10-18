@@ -109,7 +109,7 @@ module Argument =
             | ArgumentValueDefinition.Array (Some defaultValue) -> sprintf " <c:dark-yellow>[default: %A]</c>" defaultValue
             | _ -> ""
 
-        [ sprintf "<c:dark-green>%s</c>" (name |> ArgumentName.value); sprintf "%s%s" description defaultValue ]
+        [ sprintf "<c:green>%s</c>" (name |> ArgumentName.value); sprintf "%s%s" description defaultValue ]
 
 [<RequireQualifiedAccess>]
 type ArgumentValue =

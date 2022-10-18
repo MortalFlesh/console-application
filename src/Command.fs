@@ -146,7 +146,7 @@ module internal Commands =
         commands
         |> Map.toList
         |> List.map (fun (name, command) -> [
-            sprintf "<c:dark-green>%s</c>" (name |> CommandName.value)
+            sprintf "<c:green>%s</c>" (name |> CommandName.value)
             command |> Command.description
         ])
 
@@ -163,9 +163,9 @@ module internal Commands =
             Description = "Displays help for a command"
             Help =
                 [
-                    "The <c:dark-green>{{command.name}}</c> command displays help for a given command:"
-                    "        <c:dark-green>dotnet {{command.full_name}} list</c>"
-                    "    To display list of available commands, please use <c:dark-green>list</c> command."
+                    "The <c:green>{{command.name}}</c> command displays help for a given command:"
+                    "        <c:green>dotnet {{command.full_name}} list</c>"
+                    "    To display list of available commands, please use <c:green>list</c> command."
                 ]
                 |> String.concat "\n\n"
                 |> Some
@@ -214,10 +214,10 @@ module internal Commands =
             Description = "Lists commands"
             Help =
                 [
-                    "The <c:dark-green>{{command.name}}</c> command lists all commands:"
-                    "        <c:dark-green>dotnet {{command.full_name}}</c>"
+                    "The <c:green>{{command.name}}</c> command lists all commands:"
+                    "        <c:green>dotnet {{command.full_name}}</c>"
                     "    You can also display the commands for a specific namespace:"
-                    "        <c:dark-green>dotnet {{command.full_name}} test</c>"
+                    "        <c:green>dotnet {{command.full_name}} test</c>"
                 ]
                 |> String.concat "\n\n"
                 |> Some

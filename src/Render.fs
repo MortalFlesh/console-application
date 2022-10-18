@@ -73,7 +73,7 @@ module internal Help =
         let options = command.Options @ applicationOptions
 
         createUsage Complete options commandName command
-        |> sprintf "<c:dark-green>%s</c>\n"
+        |> sprintf "<c:green>%s</c>\n"
         |> output.Message
 
 [<RequireQualifiedAccess>]

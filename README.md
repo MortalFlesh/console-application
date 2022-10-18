@@ -464,10 +464,10 @@ This is a help, used in `list` command:
 ```fs
 Help =
     [
-        "The <c:dark-green>{{command.name}}</c> command lists all commands:"
-        "        <c:dark-green>dotnet {{command.full_name}}</c>"
+        "The <c:green>{{command.name}}</c> command lists all commands:"
+        "        <c:green>dotnet {{command.full_name}}</c>"
         "    You can also display the commands for a specific namespace:"
-        "        <c:dark-green>dotnet {{command.full_name}} test</c>"
+        "        <c:green>dotnet {{command.full_name}} test</c>"
     ]
     |> String.concat "\n\n"
     |> Some
