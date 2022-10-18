@@ -187,11 +187,11 @@ let ``input should have options`` =
 
                     let result =
                         match input with
-                        | Input.HasOption option value -> Some value
+                        | Input.Option.Has option value -> Some value
                         | _ -> None
 
                     let resultValue =
-                        try Some (input |> Input.getOption option)
+                        try Some (input |> Input.Option.get option)
                         with
                         | _ -> None
 
@@ -214,11 +214,11 @@ let ``input should have option with value`` =
 
                     let result =
                         match input with
-                        | Input.IsSetOption option value -> Some value
+                        | Input.Option.IsSet option value -> Some value
                         | _ -> None
 
                     let resultValue =
-                        try Some (input |> Input.getOption option)
+                        try Some (input |> Input.Option.get option)
                         with
                         | _ -> None
 
@@ -288,10 +288,10 @@ let ``input should have arguments`` =
 
                     let result =
                         match input with
-                        | Input.HasArgument argument value -> Some value
+                        | Input.Argument.Has argument value -> Some value
                         | _ -> None
 
-                    let resultValue = input |> Input.getArgument argument
+                    let resultValue = input |> Input.Argument.get argument
 
                     Expect.equal result expected description
                     Expect.equal (Some resultValue) expected description

@@ -37,7 +37,7 @@ module internal Interact =
     let map ask: Interact -> IO -> IO =
         fun interact (input, output) ->
             match input with
-            | Input.IsSetOption OptionNames.NoInteraction _ -> (input, output)
+            | Input.Option.Has OptionNames.NoInteraction _ -> (input, output)
             | _ -> (input, output) |> IO.toInteractive ask |> interact
 
 type Execute = IO -> ExitCode
@@ -139,6 +139,7 @@ module internal Commands =
             OptionsDefinitions.quiet
             OptionsDefinitions.version
             OptionsDefinitions.noInteraction
+            OptionsDefinitions.noProgress
             OptionsDefinitions.verbose
         ]
 
@@ -179,7 +180,7 @@ module internal Commands =
                 result {
                     let! rawCommandName =
                         input
-                        |> Input.getArgumentValue "command_name"
+                        |> Input.Argument.value "command_name"
                         |> CommandName.createInRuntime <@> ArgsError.CommandNameError
 
                     return!
@@ -239,7 +240,7 @@ module internal Commands =
                     |> output.SimpleOptions "Options:"
 
                 match input with
-                | Input.ArgumentOptionalValue "namespace" namespaceToList ->
+                | Input.Argument.OptionalValue "namespace" namespaceToList ->
                     match commands |> byNamespace namespaceToList with
                     | commandsByNamespace when commandsByNamespace |> Map.isEmpty ->
                         output.Error <| sprintf "There are no commands defined in the \"%s\" namespace.\n" namespaceToList

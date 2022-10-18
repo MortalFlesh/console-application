@@ -4,8 +4,6 @@ module Progress =
     open System
     open MF.ConsoleStyle
 
-    let noProgressOption = Option.noValue "no-progress" None "Whether to disable all progress bars."
-
     type Progress (io: IO, name: string) =
         let (input, output) = io
         let mutable progressBar: ProgressBar option = None
@@ -13,7 +11,7 @@ module Progress =
         member private __.IsEnabled() =
             let enableProgressBars =
                 match input with
-                | Input.IsSetOption "no-progress" _ -> false
+                | Input.Option.Has OptionNames.NoProgress _ -> false
                 | _ -> true
 
             enableProgressBars && (not <| output.IsDebug())

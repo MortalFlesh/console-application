@@ -7,7 +7,10 @@
     - `updateOutput`
     - `withStyle`
     - `withCustomTags`
+- [**BC**] Add `no-progress` option for all commands (`no-progress` is also reserved key word now)
 - [**BC**] Require a default value for a `Option.required`
+- [**BC**] Move `Option` functions in `Input` module into `Input.Option` module and rename them to be shorter
+- [**BC**] Move `Argument` functions in `Input` module into `Input.Argument` module and rename them to be shorter
 
 ## 3.1.0 - 2022-10-17
 - Show multiple errors instead of a first one, if there are more than one

@@ -60,17 +60,17 @@ let main argv =
                     let firstName = input |> Input.getArgumentValue "firstName"
 
                     match input with
-                    | Input.ArgumentOptionalValue "lastName" lastName -> sprintf "%s %s" firstName lastName
+                    | Input.Argument.OptionalValue "lastName" lastName -> sprintf "%s %s" firstName lastName
                     | _ -> firstName
 
                 let greet name =
                     match input with
-                    | Input.IsSetOption "formal" _ -> sprintf "Good morning, %s" name
+                    | Input.Option.IsSet "formal" _ -> sprintf "Good morning, %s" name
                     | _ -> sprintf "Hello, %s" name
 
                 let (shouldYell, loudly) =
                     match input with
-                    | Input.HasOption "yell" value ->
+                    | Input.Option.Has "yell" value ->
                         match value |> OptionValue.stringValue with
                         | Some "loud" -> (true, true)
                         | _ -> (true, false)
@@ -204,10 +204,10 @@ Add missing argument:
 Interact = Some (fun ({ Input = input; Ask = ask }, output) ->
     let input =
         match input with
-        | Input.HasArgument "mandatoryArg" _ -> input   // already has a value
+        | Input.Argument.Has "mandatoryArg" _ -> input   // already has a value
         | _ ->  // value is missing, as user for a value
             ask "Please, give a value for mandatory argument:"
-            |> Input.setArgumentValue input "mandatoryArg"
+            |> Input.Argument.set input "mandatoryArg"
 
     (input, output)
 )
@@ -218,12 +218,12 @@ Add missing option:
 Interact = Some (fun (input, output) ->
     let input =
         match input.Input with
-        | Input.HasOption "message" value ->
+        | Input.Option.Has "message" value ->
             output.Message <| sprintf "Message value is already given from arguments, it is: %s" (value |> OptionValue.value)
             input.Input
         | _ ->
             input.Ask "Message:"
-            |> Input.setOptionValue input.Input "message"
+            |> Input.Option.set input.Input "message"
 
     (input, output)
 )
@@ -271,32 +271,32 @@ There are many ways how to access Arguments:
 
 - Through pattern matching
 
-    | Active Pattern                | Description |
-    | ---                           | ---         |
-    | _Input_.**IsArgumentDefined** | Matched when given string is defined as argument name. |
-    | _Input_.**HasArgument**       | Matched when given string has any value in current Input (_default or from args_). |
-    | _Input_.**IsSetArgument**     | Matched when input _has_ argument AND that value is _not empty_. |
+    | Active Pattern                   | Description |
+    | ---                              | ---         |
+    | _Input_._Argument_.**IsDefined** | Matched when given string is defined as argument name. |
+    | _Input_._Argument_.**Has**       | Matched when given string has any value in current Input (_default or from args_). |
+    | _Input_._Argument_.**IsSet**     | Matched when input _has_ argument AND that value is _not empty_. |
 
     - Active patterns for accessing a value
 
-    | Active Pattern                    | Description | Value |
-    | ---                               | ---         | ---   |
-    | _Input_.**ArgumentValue**         | Matched when input _has_ argument. (_Fail with exception when value is not set or it is a list._) | `string` |
-    | _Input_.**ArgumentOptionalValue** | Matched when input _has_ argument AND it has a single value. | `string` |
-    | _Input_.**ArgumentListValue**     | Matched when input _has_ argument. | `string list` |
+    | Active Pattern                       | Description | Value |
+    | ---                                  | ---         | ---   |
+    | _Input_._Argument_.**Value**         | Matched when input _has_ argument. (_Fail with exception when value is not set or it is a list._) | `string` |
+    | _Input_._Argument_.**OptionalValue** | Matched when input _has_ argument AND it has a single value. | `string` |
+    | _Input_._Argument_.**ListValue**     | Matched when input _has_ argument. | `string list` |
 
 - Just get a value from `Input`
 
     | Function                           | Description |
     | ---                                | ---         |
-    | _Input_.**tryGetArgument**           | Returns an `ArgumentValue option`, when Input _has_ argument. |
-    | _Input_.**getArgument**              | Returns an `ArgumentValue`, when Input _has_ argument OR fail with exception. |
-    | _Input_.**getArgumentValue**         | Returns a `string` value from ArgumentValue, when Input _has_ argument OR fail with exception. |
-    | _Input_.**getArgumentValueAsString** | Returns a `string option` value from ArgumentValue, when Input _has_ argument. |
-    | _Input_.**getArgumentValueAsInt**    | Returns an `int option` value from ArgumentValue, when Input _has_ argument. (_It fails with an exception when string value is not int._) |
-    | _Input_.**getArgumentValueAsList**   | Returns an `string list` value from ArgumentValue, when Input _has_ argument. (_It returns a list even for single values._) |
-    | _Input_.**tryGetArgumentValueAsInt** | Returns an `int option` value from ArgumentValue, when Input _has_ argument. (_It returns None when string value is not int._) |
-    | _Input_.**isArgumentValueSet**       | Checks whether argument has a value AND that value is _not empty_. |
+    | _Input_._Argument_.**tryGet**      | Returns an `ArgumentValue option`, when Input _has_ argument. |
+    | _Input_._Argument_.**get**         | Returns an `ArgumentValue`, when Input _has_ argument OR fail with exception. |
+    | _Input_._Argument_.**value**       | Returns a `string` value from ArgumentValue, when Input _has_ argument OR fail with exception. |
+    | _Input_._Argument_.**asString**    | Returns a `string option` value from ArgumentValue, when Input _has_ argument. |
+    | _Input_._Argument_.**asInt**       | Returns an `int option` value from ArgumentValue, when Input _has_ argument. (_It fails with an exception when string value is not int._) |
+    | _Input_._Argument_.**asList**      | Returns an `string list` value from ArgumentValue, when Input _has_ argument. (_It returns a list even for single values._) |
+    | _Input_._Argument_.**tryGetAsInt** | Returns an `int option` value from ArgumentValue, when Input _has_ argument. (_It returns None when string value is not int._) |
+    | _Input_._Argument_.**isValueSet**  | Checks whether argument has a value AND that value is _not empty_. |
 
     Note: All functions above will fail with an exception when given "argument" is not defined.
 
@@ -343,32 +343,32 @@ There are many ways how to access Options:
 
 - Through pattern matching
 
-    | Active Pattern              | Description |
-    | ---                         | ---         |
-    | _Input_.**IsOptionDefined** | Matched when given string is defined as option name. |
-    | _Input_.**HasOption**       | Matched when given string has any value in current Input (_default or from args_). |
-    | _Input_.**IsSetOption**     | Matched when input _has_ option AND that value is _not empty_. |
+    | Active Pattern                 | Description |
+    | ---                            | ---         |
+    | _Input_._Option_.**IsDefined** | Matched when given string is defined as option name. |
+    | _Input_._Option_.**Has**       | Matched when given string has any value in current Input (_default or from args_). |
+    | _Input_._Option_.**IsSet**     | Matched when input _has_ option AND that value is _not empty_. |
 
     - Active patterns for accessing a value
 
-    | Active Pattern                  | Description | Value |
-    | ---                             | ---         | ---   |
-    | _Input_.**OptionValue**         | Matched when input _has_ option. (_Fail with exception when value is not set or it is a list._) | `string` |
-    | _Input_.**OptionOptionalValue** | Matched when input _has_ option AND it has a single value. | `string` |
-    | _Input_.**OptionListValue**     | Matched when input _has_ option. | `string list` |
+    | Active Pattern                     | Description | Value |
+    | ---                                | ---         | ---   |
+    | _Input_._Option_.**Value**         | Matched when input _has_ option. (_Fail with exception when value is not set or it is a list._) | `string` |
+    | _Input_._Option_.**OptionalValue** | Matched when input _has_ option AND it has a single value. | `string` |
+    | _Input_._Option_.**ListValue**     | Matched when input _has_ option. | `string list` |
 
 - Just get a value from `Input`
 
-    | Function                           | Description |
-    | ---                                | ---         |
-    | _Input_.**tryGetOption**           | Returns an `OptionValue option`, when Input _has_ option. |
-    | _Input_.**getOption**              | Returns an `OptionValue`, when Input _has_ option OR fail with exception. |
-    | _Input_.**getOptionValue**         | Returns a `string` value from OptionValue, when Input _has_ option OR fail with exception. |
-    | _Input_.**getOptionValueAsString** | Returns a `string option` value from OptionValue, when Input _has_ option. |
-    | _Input_.**getOptionValueAsInt**    | Returns an `int option` value from OptionValue, when Input _has_ option. (_It fails with an exception when string value is not int._) |
-    | _Input_.**getOptionValueAsList**   | Returns an `string list` value from OptionValue, when Input _has_ option. (_It returns a list even for single values._) |
-    | _Input_.**tryGetOptionValueAsInt** | Returns an `int option` value from OptionValue, when Input _has_ option. (_It returns None when string value is not int._) |
-    | _Input_.**isOptionValueSet**       | Checks whether option has a value AND that value is _not empty_. |
+    | Function                        | Description |
+    | ---                             | ---         |
+    | _Input_.Option_.**tryGet**      | Returns an `OptionValue option`, when Input _has_ option. |
+    | _Input_.Option_.**get**         | Returns an `OptionValue`, when Input _has_ option OR fail with exception. |
+    | _Input_.Option_.**value**       | Returns a `string` value from OptionValue, when Input _has_ option OR fail with exception. |
+    | _Input_.Option_.**asString**    | Returns a `string option` value from OptionValue, when Input _has_ option. |
+    | _Input_.Option_.**asInt**       | Returns an `int option` value from OptionValue, when Input _has_ option. (_It fails with an exception when string value is not int._) |
+    | _Input_.Option_.**asList**      | Returns an `string list` value from OptionValue, when Input _has_ option. (_It returns a list even for single values._) |
+    | _Input_.Option_.**tryGetAsInt** | Returns an `int option` value from OptionValue, when Input _has_ option. (_It returns None when string value is not int._) |
+    | _Input_._Option_.**isValueSet** | Checks whether option has a value AND that value is _not empty_. |
 
     Note: All functions above will fail with an exception when given "option" is not defined.
 
@@ -416,6 +416,7 @@ dotnet path/to/console.dll help
         -q, --quiet           Do not output any message
         -V, --version         Display this application version
         -n, --no-interaction  Do not ask any interactive question
+            --no-progress     Whether to disable all progress bars
         -v|vv|vvv, --verbose  Increase the verbosity of messages
 
     Help
@@ -447,6 +448,7 @@ dotnet path/to/console.dll list
         -q, --quiet           Do not output any message
         -V, --version         Display this application version
         -n, --no-interaction  Do not ask any interactive question
+            --no-progress     Whether to disable all progress bars
         -v|vv|vvv, --verbose  Increase the verbosity of messages
 
     Help
