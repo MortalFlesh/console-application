@@ -16,7 +16,7 @@ NUGET
       System.Runtime.Extensions (>= 4.1)
       System.Runtime.InteropServices (>= 4.1)
       System.Text.RegularExpressions (>= 4.1)
-    ConsoleStyle (4.0)
+    ConsoleStyle (4.1)
       Colorful.Console (>= 1.2.15 < 2.0)
       FSharp.Core (>= 6.0.6 < 7.0)
       ShellProgressBar (>= 5.2 < 6.0)
