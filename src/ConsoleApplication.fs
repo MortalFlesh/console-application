@@ -8,8 +8,7 @@ module MFConsoleApplication =
     open MF.ErrorHandling.Result.Operators
 
     let consoleApplication =
-        let showError application = Error.show application None
-        let buildApplication = ConsoleApplicationBuilder.buildApplication Help.showForCommand showError
+        let buildApplication = ConsoleApplicationBuilder.buildApplication Help.showForCommand
 
         ConsoleApplicationBuilder (buildApplication)
 
@@ -17,33 +16,33 @@ module MFConsoleApplication =
         let output = parts.Output
 
         let renderTitle () =
-            parts.Title
+            parts.Meta.Title
             |>! (ApplicationTitle.value >> output.MainTitle)
 
-        let name = parts.Name |> ApplicationName.value
+        let name = parts.Meta.Name |> ApplicationName.value
 
         match parts.ApplicationInfo with
         | ApplicationInfo.Hidden -> ()
         | ApplicationInfo.MainTitle -> renderTitle()
         | ApplicationInfo.OnlyNameAndVersion ->
-            match parts.Version with
+            match parts.Meta.Version with
             | Some (ApplicationVersion version) -> sprintf "%s <c:green><%s></c>" name version
             | _ -> name
             |> output.Message
         | ApplicationInfo.NameAndVersion ->
-            match parts.Version with
+            match parts.Meta.Version with
             | Some (ApplicationVersion version) -> sprintf "%s <%s>" name version
             | _ -> name
             |> output.Title
         | ApplicationInfo.Interactive ->
-            match parts.Version with
+            match parts.Meta.Version with
             | Some (ApplicationVersion version) -> sprintf "%s <%s>" name version
             | _ -> name
             |> sprintf "%s - interactive mode"
             |> output.Title
         | ApplicationInfo.All ->
             renderTitle()
-            match parts.Version with
+            match parts.Meta.Version with
             | Some (ApplicationVersion version) -> sprintf "%s <%s>" name version
             | _ -> name
             |> output.Title
@@ -53,6 +52,9 @@ module MFConsoleApplication =
     /// Map error by appending a current command.
     let private (<!!*>) result (currentCommand: CurrentCommand) =
         result <@> fun __ -> (__, currentCommand)
+
+    let private (<*!!*>) xResult (currentCommand: CurrentCommand) =
+        xResult |> AsyncResult.mapError (fun __ -> (__, currentCommand))
 
     /// Map error with appended current command.
     let private (<!!!>) result f =
@@ -99,8 +101,8 @@ module MFConsoleApplication =
                         let! (commandName, command) =
                             match commands |> Commands.find rawCommandName with
                             | ExactlyOne (commandName, command) -> Ok (commandName, command)
-                            | MoreThanOne (givenName, names) -> Result.Error (ArgsError.AmbigousCommandFound (givenName, names))
-                            | NoCommand unknownName -> Result.Error (ArgsError.CommandNotFound unknownName)
+                            | MoreThanOne (givenName, names) -> Error (ArgsError.AmbigousCommandFound (givenName, names))
+                            | NoCommand unknownName -> Error (ArgsError.CommandNotFound unknownName)
                             <!!*> currentCommand
 
                         let currentCommand: CurrentCommand = Some (commandName, command)
@@ -121,12 +123,12 @@ module MFConsoleApplication =
                         return input, parsedInput.UnfilledArgumentDefinitions
                     }
 
-    let private runApplication (args: Args) (ConsoleApplication application): Result<ExitCode, ConsoleApplicationError * CurrentCommand> =
+    let runAsyncResult (args: Args) (ConsoleApplication application): AsyncResult<ExitCode, ConsoleApplicationError * CurrentCommand> =
         let currentCommand: CurrentCommand = None
 
         match application with
         | Ok parts ->
-            result {
+            asyncResult {
                 let output = parts.Output
 
                 match args with
@@ -163,8 +165,8 @@ module MFConsoleApplication =
                             |> Help.showForCommand output parts.OptionDecorationLevel parts.ApplicationOptions commandName
 
                             Ok ExitCode.Success
-                        | MoreThanOne (givenName, names) -> Result.Error (ArgsError.AmbigousCommandFound (givenName, names))
-                        | NoCommand unknownName -> Result.Error (ArgsError.CommandNotFound unknownName)
+                        | MoreThanOne (givenName, names) -> Error (ArgsError.AmbigousCommandFound (givenName, names))
+                        | NoCommand unknownName -> Error (ArgsError.CommandNotFound unknownName)
                         <@> ConsoleApplicationError.ArgsError
                         <!!*> currentCommand
                 | Args.ContainsOption OptionsDefinitions.version ->
@@ -200,18 +202,20 @@ module MFConsoleApplication =
                             input
                             |> Input.prepareUnfilledArguments unfilledArguments <@> (ArgsError.InputError >> ConsoleApplicationError.ArgsError) <!!*> currentCommand
 
-                        return
-                            (input, output)
-                            |> command.Execute
+                        return!
+                            command.Execute
+                            |> Execute.run (input, output) <*!!*> currentCommand
                     with
                     | e ->
-                        return! Result.Error (ConsoleApplicationError.ConsoleApplicationError e.Message) <!!*> currentCommand
+                        return! Error (ConsoleApplicationError.ConsoleApplicationException e) <!!*> currentCommand
             }
-        | Result.Error error -> Result.Error (error, currentCommand)
+        | Error error -> AsyncResult.ofError (error, currentCommand)
 
-    let runResult args application =
-        application
-        |> runApplication args <@> fst
+    let private runApplication args =
+        runAsyncResult args >> Async.RunSynchronously
+
+    let runResult args =
+        runApplication args >@> fst
 
     let run args application =
         application

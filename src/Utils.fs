@@ -106,3 +106,10 @@ module internal List =
             if set.Length > 1 then Some key
             else None
         )
+
+[<RequireQualifiedAccess>]
+module Help =
+    let lines lines =
+        lines
+        |> String.concat "\n\n"
+        |> Some

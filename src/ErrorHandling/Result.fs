@@ -353,7 +353,7 @@ module internal AsyncResult =
 
     /// Lift a value into an Error inside a AsyncResult
     let ofError (x: 'Error): AsyncResult<'Success, 'Error> =
-        x |> Result.Error |> Async.retn
+        x |> Error |> Async.retn
 
     /// Lift a Result into an AsyncResult
     let ofResult (x: Result<'Success, 'Error>): AsyncResult<'Success, 'Error> =

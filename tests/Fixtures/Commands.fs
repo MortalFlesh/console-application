@@ -11,7 +11,7 @@ let commandOne executeCallback: CommandDefinition =
             Argument.optional "optionalArg" "Optional argument" (Some "default")
         ]
         Options = [
-            Option.required "opt1" (Some "o") "Option one" (Some "opt1-default-value")
+            Option.required "opt1" (Some "o") "Option one" "opt1-default-value"
             Option.optional "opt2" (Some "O") "Option two" None
             Option.optional "message" None "Message option" None
         ]
@@ -19,12 +19,12 @@ let commandOne executeCallback: CommandDefinition =
         Interact = Some (fun ({ Input = input }, output) ->
             let input =
                 match input with
-                | Input.IsSetOption "message" _ -> input
-                | _ -> "from-interaction" |> Input.setOptionValue input "message"
+                | Input.Option.IsSet "message" _ -> input
+                | _ -> "from-interaction" |> Input.Option.set input "message"
 
             (input, output)
         )
-        Execute = fun (input, output) ->
+        Execute = Execute <| fun (input, output) ->
             executeCallback input
             ExitCode.Success
     }
@@ -43,7 +43,7 @@ let commandTwo executeCallback: CommandDefinition =
         ]
         Initialize = None
         Interact = None
-        Execute = fun (input, output) ->
+        Execute = Execute <| fun (input, output) ->
             executeCallback input
             ExitCode.Success
     }
@@ -57,12 +57,12 @@ let commandThree executeCallback: CommandDefinition =
             Argument.optionalArray "argumentList" "Argument list" None
         ]
         Options = [
-            Option.required "opt1" (Some "o") "Option one" (Some "opt1-default-value")
+            Option.required "opt1" (Some "o") "Option one" "opt1-default-value"
             Option.requiredArray "item" (Some "i") "Items" (Some ["foo"])
         ]
         Initialize = None
         Interact = None
-        Execute = fun (input, output) ->
+        Execute = Execute <| fun (input, output) ->
             executeCallback input
             ExitCode.Success
     }
@@ -81,7 +81,7 @@ let commandFour executeCallback: CommandDefinition =
         ]
         Initialize = None
         Interact = None
-        Execute = fun (input, output) ->
+        Execute = Execute <| fun (input, output) ->
             executeCallback input
             ExitCode.Success
     }
@@ -98,12 +98,12 @@ let commandFive executeCallback: CommandDefinition =
         Interact = Some (fun ({ Input = input; Ask = ask }, output) ->
             let input =
                 match input with
-                | Input.HasArgument "mandatoryArg" _ -> input
-                | _ -> ask "Add mandatory argument" |> Input.setArgumentValue input "mandatoryArg"
+                | Input.Argument.Has "mandatoryArg" _ -> input
+                | _ -> ask "Add mandatory argument" |> Input.Argument.set input "mandatoryArg"
 
             (input, output)
         )
-        Execute = fun (input, output) ->
+        Execute = Execute <| fun (input, output) ->
             executeCallback input
             ExitCode.Success
     }
@@ -117,12 +117,31 @@ let commandSix executeCallback: CommandDefinition =
         ]
         Options = [
             Option.noValue "foo" (Some "f") ""
-            Option.required "bar" (Some "b") "" None
+            Option.required "bar" (Some "b") "" ""
             Option.optional "cat" (Some "c") "" None
         ]
         Initialize = None
         Interact = None
-        Execute = fun (input, output) ->
+        Execute = Execute <| fun (input, output) ->
+            executeCallback input
+            ExitCode.Success
+    }
+
+let commandSeven executeCallback: CommandDefinition =
+    {
+        Description = "Test command 7"
+        Help = None
+        Arguments = [
+            Argument.optional "arg" "Optional argument" None
+        ]
+        Options = [
+            Option.noValue "force" (Some "f") ""
+            Option.required "api-url" None "" "https://api"
+            Option.optional "output" (Some "o") "If specified, output goes to the file, if just presented stdout is used." None
+        ]
+        Initialize = None
+        Interact = None
+        Execute = Execute <| fun (input, output) ->
             executeCallback input
             ExitCode.Success
     }

@@ -9,7 +9,7 @@ type OptionDecorationLevel =
 [<RequireQualifiedAccess>]
 type OptionValueDefinition =
     | ValueNone
-    | ValueRequired of string option
+    | ValueRequired of string
     | ValueOptional of string option
     | ValueIsArray of (string list) option
     | ValueRequiredArray of (string list) option
@@ -209,6 +209,14 @@ module Option =
             Value = value
         }
 
+    let internal createApplicationOptionWithoutShortcut name description value: Option =
+        {
+            Name = OptionName (Name name)
+            Shortcut = None
+            Description = description
+            Value = value
+        }
+
     let internal isOption (value: InputValue) =
         value.StartsWith "--" && value.Length > 2
 
@@ -269,6 +277,7 @@ module internal OptionsDefinitions =
     let noInteraction = Option.createApplicationOption OptionNames.NoInteraction OptionShortcuts.NoInteraction "Do not ask any interactive question" OptionValueDefinition.ValueNone
     let quiet = Option.createApplicationOption OptionNames.Quiet OptionShortcuts.Quiet "Do not output any message" OptionValueDefinition.ValueNone
     let verbose = Option.createApplicationOption OptionNames.Verbose OptionShortcuts.Verbose "Increase the verbosity of messages" OptionValueDefinition.ValueNone
+    let noProgress = Option.createApplicationOptionWithoutShortcut OptionNames.NoProgress "Whether to disable all progress bars" OptionValueDefinition.ValueNone
 
     let (|HasDefinedOption|_|) option (options: OptionsDefinitions) =
         options |> List.tryFind (Option.nameValue >> (=) option)
@@ -312,7 +321,7 @@ module internal OptionsDefinitions =
 
                 match option.Value with
                 | OptionValueDefinition.ValueNone -> ("", false, None)
-                | OptionValueDefinition.ValueRequired defaultValue -> (sprintf "=%s" nameUpper, false, defaultValue |> Option.map (sprintf "%A"))
+                | OptionValueDefinition.ValueRequired defaultValue -> (sprintf "=%s" nameUpper, false, defaultValue |> sprintf "%A" |> Some)
                 | OptionValueDefinition.ValueOptional defaultValue -> (sprintf "[=%s]" nameUpper, false, defaultValue |> Option.map (sprintf "%A"))
                 | OptionValueDefinition.ValueIsArray defaultValue -> (sprintf "[=%s]" nameUpper, true, defaultValue |> Option.map (sprintf "%A"))
                 | OptionValueDefinition.ValueRequiredArray defaultValue -> (sprintf "=%s" nameUpper, true, defaultValue |> Option.map (sprintf "%A"))
@@ -331,7 +340,7 @@ module internal OptionsDefinitions =
                 ]
                 |> String.concat " "
 
-            [ sprintf "<c:dark-green>%s--%s%s</c>" shortcut optionName optionValue; description ]
+            [ sprintf "<c:green>%s--%s%s</c>" shortcut optionName optionValue; description ]
         )
 
     let private fromRaw (option: RawOptionDefinition): Option =
@@ -539,7 +548,7 @@ module internal Options =
                 | _ ->
                     match definition.Value with
                     | OptionValueDefinition.ValueNone -> options
-                    | OptionValueDefinition.ValueRequired defaultValue -> defaultValue |> setDefault definition.Name OptionValue.ValueRequired options
+                    | OptionValueDefinition.ValueRequired defaultValue -> Some defaultValue |> setDefault definition.Name OptionValue.ValueRequired options
                     | OptionValueDefinition.ValueOptional defaultValue -> defaultValue |> setDefault definition.Name (Some >> OptionValue.ValueOptional) options
                     | OptionValueDefinition.ValueIsArray defaultValues -> defaultValues |> setDefault definition.Name OptionValue.ValueIsArray options
                     | OptionValueDefinition.ValueRequiredArray defaultValues -> defaultValues |> setDefault definition.Name OptionValue.ValueRequiredArray options

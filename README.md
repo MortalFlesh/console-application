@@ -55,22 +55,22 @@ let main argv =
             ]
             Initialize = None
             Interact = None
-            Execute = fun (input, output) ->
+            Execute = Execute <| fun (input, output) ->
                 let names =
                     let firstName = input |> Input.getArgumentValue "firstName"
 
                     match input with
-                    | Input.ArgumentOptionalValue "lastName" lastName -> sprintf "%s %s" firstName lastName
+                    | Input.Argument.OptionalValue "lastName" lastName -> sprintf "%s %s" firstName lastName
                     | _ -> firstName
 
                 let greet name =
                     match input with
-                    | Input.IsSetOption "formal" _ -> sprintf "Good morning, %s" name
+                    | Input.Option.IsSet "formal" _ -> sprintf "Good morning, %s" name
                     | _ -> sprintf "Hello, %s" name
 
                 let (shouldYell, loudly) =
                     match input with
-                    | Input.HasOption "yell" value ->
+                    | Input.Option.Has "yell" value ->
                         match value |> OptionValue.stringValue with
                         | Some "loud" -> (true, true)
                         | _ -> (true, false)
@@ -160,14 +160,26 @@ Command: `dotnet example.dll my:first-command --help`
 | name | `name: string` | It will set a name of the application. (_This is part of ApplicationInfo._) |
 | version | `version: string` | It will set a version of the application. (_This is part of ApplicationInfo._) |
 | title | `title: string` | It will set a main title of the application. (_This is part of ApplicationInfo._) |
+| description | `description: string` | It will set a description of the application. (_It is visible in `about` command._) |
+| meta | `string * string` | It will add an application meta information. (_It is visible in `about` command._) |
+| | `(string * string) list` | It will add multiple application meta information. (_It is visible in `about` command._) |
+| git | `repository: string option * branch: string option * commit: string option` | It will register git meta information, which is visible in `about` command. |
+| gitRepository | `repository: string` | It will register git repository meta information, which is visible in `about` command. |
+| gitBranch | `branch: string` | It will register git branch meta information, which is visible in `about` command. |
+| gitCommit | `commit: string` | It will register git commit meta information, which is visible in `about` command. |
 | info | `ApplicationInfo` | It will define, how application info will be shown in commands output. (Default is `Hidden`) |
 | showOptions | `OptionDecorationLevel` | It will define, how options will be shown in the command help output. (Default is `Minimal`) |
 | command | `commandName: string`, `CommandDefinition` | It will register a command to the application. |
 | defaultCommand | `commandName: string` | It will set a name of default command. Default command is run when no command name is pass to the arguments. (_Default is `list`._) |
 | useOutput | `Output` | It will override `Output` in `IO`, which gets every command life-cycle function. (_Default is implemented by [ConsoleStyle](https://github.com/MortalFlesh/console-style)_) |
 | useAsk | `question: string -> answer: string` | It will override an Ask function, which is used in `Interact` life-cycle stage. (_Default is implemented by [ConsoleStyle](https://github.com/MortalFlesh/console-style#ask))_ |
+| updateOutput | `Output -> Output` | Function which allows to change the output (set style, different outputInterface for a ConsoleStyle and more) |
+| withStyle | `MF.ConsoleStyle.Style` | A style which will be set to the `Output`. |
+| withCustomTags | `MF.ConsoleStyle.CustomTag list` | It will register custom tags to the Output Style. |
+| | `Result<MF.ConsoleStyle.CustomTag, string> list` | It will handle results and register custom tags to the Output Style. |
 
 NOTES:
+- All parts of ApplicationInfo are shown in `about` command
 - All functions has the first argument for the `state: Definition`, but this is a current state of the application and it is passed implicitly in the background by computation expression.
 - All functions are optional to call. Those which _sets_ a value will override the previous definition.
 
@@ -181,6 +193,11 @@ Commands have three life-cycle functions that are invoked when running the comma
     - This _stage_ may be skipped by setting `--no-interaction` option.
 - `Execute` (required)
     - This method is executed after `initialize` and `interact`. It contains the logic you want the command to execute.
+    - It has multiple variants:
+        - `Execute`
+        - `ExecuteResult`
+        - `ExecuteAsync`
+        - `ExecuteAsyncResult`
 
 All life-cycle functions gets an `IO` (`Input * Output`).
 
@@ -200,10 +217,10 @@ Add missing argument:
 Interact = Some (fun ({ Input = input; Ask = ask }, output) ->
     let input =
         match input with
-        | Input.HasArgument "mandatoryArg" _ -> input   // already has a value
+        | Input.Argument.Has "mandatoryArg" _ -> input   // already has a value
         | _ ->  // value is missing, as user for a value
             ask "Please, give a value for mandatory argument:"
-            |> Input.setArgumentValue input "mandatoryArg"
+            |> Input.Argument.set input "mandatoryArg"
 
     (input, output)
 )
@@ -214,12 +231,12 @@ Add missing option:
 Interact = Some (fun (input, output) ->
     let input =
         match input.Input with
-        | Input.HasOption "message" value ->
+        | Input.Option.Has "message" value ->
             output.Message <| sprintf "Message value is already given from arguments, it is: %s" (value |> OptionValue.value)
             input.Input
         | _ ->
             input.Ask "Message:"
-            |> Input.setOptionValue input.Input "message"
+            |> Input.Option.set input.Input "message"
 
     (input, output)
 )
@@ -267,32 +284,32 @@ There are many ways how to access Arguments:
 
 - Through pattern matching
 
-    | Active Pattern                | Description |
-    | ---                           | ---         |
-    | _Input_.**IsArgumentDefined** | Matched when given string is defined as argument name. |
-    | _Input_.**HasArgument**       | Matched when given string has any value in current Input (_default or from args_). |
-    | _Input_.**IsSetArgument**     | Matched when input _has_ argument AND that value is _not empty_. |
+    | Active Pattern                   | Description |
+    | ---                              | ---         |
+    | _Input_._Argument_.**IsDefined** | Matched when given string is defined as argument name. |
+    | _Input_._Argument_.**Has**       | Matched when given string has any value in current Input (_default or from args_). |
+    | _Input_._Argument_.**IsSet**     | Matched when input _has_ argument AND that value is _not empty_. |
 
     - Active patterns for accessing a value
 
-    | Active Pattern                    | Description | Value |
-    | ---                               | ---         | ---   |
-    | _Input_.**ArgumentValue**         | Matched when input _has_ argument. (_Fail with exception when value is not set or it is a list._) | `string` |
-    | _Input_.**ArgumentOptionalValue** | Matched when input _has_ argument AND it has a single value. | `string` |
-    | _Input_.**ArgumentListValue**     | Matched when input _has_ argument. | `string list` |
+    | Active Pattern                       | Description | Value |
+    | ---                                  | ---         | ---   |
+    | _Input_._Argument_.**Value**         | Matched when input _has_ argument. (_Fail with exception when value is not set or it is a list._) | `string` |
+    | _Input_._Argument_.**OptionalValue** | Matched when input _has_ argument AND it has a single value. | `string` |
+    | _Input_._Argument_.**ListValue**     | Matched when input _has_ argument. | `string list` |
 
 - Just get a value from `Input`
 
     | Function                           | Description |
     | ---                                | ---         |
-    | _Input_.**tryGetArgument**           | Returns an `ArgumentValue option`, when Input _has_ argument. |
-    | _Input_.**getArgument**              | Returns an `ArgumentValue`, when Input _has_ argument OR fail with exception. |
-    | _Input_.**getArgumentValue**         | Returns a `string` value from ArgumentValue, when Input _has_ argument OR fail with exception. |
-    | _Input_.**getArgumentValueAsString** | Returns a `string option` value from ArgumentValue, when Input _has_ argument. |
-    | _Input_.**getArgumentValueAsInt**    | Returns an `int option` value from ArgumentValue, when Input _has_ argument. (_It fails with an exception when string value is not int._) |
-    | _Input_.**getArgumentValueAsList**   | Returns an `string list` value from ArgumentValue, when Input _has_ argument. (_It returns a list even for single values._) |
-    | _Input_.**tryGetArgumentValueAsInt** | Returns an `int option` value from ArgumentValue, when Input _has_ argument. (_It returns None when string value is not int._) |
-    | _Input_.**isArgumentValueSet**       | Checks whether argument has a value AND that value is _not empty_. |
+    | _Input_._Argument_.**tryGet**      | Returns an `ArgumentValue option`, when Input _has_ argument. |
+    | _Input_._Argument_.**get**         | Returns an `ArgumentValue`, when Input _has_ argument OR fail with exception. |
+    | _Input_._Argument_.**value**       | Returns a `string` value from ArgumentValue, when Input _has_ argument OR fail with exception. |
+    | _Input_._Argument_.**asString**    | Returns a `string option` value from ArgumentValue, when Input _has_ argument. |
+    | _Input_._Argument_.**asInt**       | Returns an `int option` value from ArgumentValue, when Input _has_ argument. (_It fails with an exception when string value is not int._) |
+    | _Input_._Argument_.**asList**      | Returns an `string list` value from ArgumentValue, when Input _has_ argument. (_It returns a list even for single values._) |
+    | _Input_._Argument_.**tryGetAsInt** | Returns an `int option` value from ArgumentValue, when Input _has_ argument. (_It returns None when string value is not int._) |
+    | _Input_._Argument_.**isValueSet**  | Checks whether argument has a value AND that value is _not empty_. |
 
     Note: All functions above will fail with an exception when given "argument" is not defined.
 
@@ -339,32 +356,32 @@ There are many ways how to access Options:
 
 - Through pattern matching
 
-    | Active Pattern              | Description |
-    | ---                         | ---         |
-    | _Input_.**IsOptionDefined** | Matched when given string is defined as option name. |
-    | _Input_.**HasOption**       | Matched when given string has any value in current Input (_default or from args_). |
-    | _Input_.**IsSetOption**     | Matched when input _has_ option AND that value is _not empty_. |
+    | Active Pattern                 | Description |
+    | ---                            | ---         |
+    | _Input_._Option_.**IsDefined** | Matched when given string is defined as option name. |
+    | _Input_._Option_.**Has**       | Matched when given string has any value in current Input (_default or from args_). |
+    | _Input_._Option_.**IsSet**     | Matched when input _has_ option AND that value is _not empty_. |
 
     - Active patterns for accessing a value
 
-    | Active Pattern                  | Description | Value |
-    | ---                             | ---         | ---   |
-    | _Input_.**OptionValue**         | Matched when input _has_ option. (_Fail with exception when value is not set or it is a list._) | `string` |
-    | _Input_.**OptionOptionalValue** | Matched when input _has_ option AND it has a single value. | `string` |
-    | _Input_.**OptionListValue**     | Matched when input _has_ option. | `string list` |
+    | Active Pattern                     | Description | Value |
+    | ---                                | ---         | ---   |
+    | _Input_._Option_.**Value**         | Matched when input _has_ option. (_Fail with exception when value is not set or it is a list._) | `string` |
+    | _Input_._Option_.**OptionalValue** | Matched when input _has_ option AND it has a single value. | `string` |
+    | _Input_._Option_.**ListValue**     | Matched when input _has_ option. | `string list` |
 
 - Just get a value from `Input`
 
-    | Function                           | Description |
-    | ---                                | ---         |
-    | _Input_.**tryGetOption**           | Returns an `OptionValue option`, when Input _has_ option. |
-    | _Input_.**getOption**              | Returns an `OptionValue`, when Input _has_ option OR fail with exception. |
-    | _Input_.**getOptionValue**         | Returns a `string` value from OptionValue, when Input _has_ option OR fail with exception. |
-    | _Input_.**getOptionValueAsString** | Returns a `string option` value from OptionValue, when Input _has_ option. |
-    | _Input_.**getOptionValueAsInt**    | Returns an `int option` value from OptionValue, when Input _has_ option. (_It fails with an exception when string value is not int._) |
-    | _Input_.**getOptionValueAsList**   | Returns an `string list` value from OptionValue, when Input _has_ option. (_It returns a list even for single values._) |
-    | _Input_.**tryGetOptionValueAsInt** | Returns an `int option` value from OptionValue, when Input _has_ option. (_It returns None when string value is not int._) |
-    | _Input_.**isOptionValueSet**       | Checks whether option has a value AND that value is _not empty_. |
+    | Function                        | Description |
+    | ---                             | ---         |
+    | _Input_.Option_.**tryGet**      | Returns an `OptionValue option`, when Input _has_ option. |
+    | _Input_.Option_.**get**         | Returns an `OptionValue`, when Input _has_ option OR fail with exception. |
+    | _Input_.Option_.**value**       | Returns a `string` value from OptionValue, when Input _has_ option OR fail with exception. |
+    | _Input_.Option_.**asString**    | Returns a `string option` value from OptionValue, when Input _has_ option. |
+    | _Input_.Option_.**asInt**       | Returns an `int option` value from OptionValue, when Input _has_ option. (_It fails with an exception when string value is not int._) |
+    | _Input_.Option_.**asList**      | Returns an `string list` value from OptionValue, when Input _has_ option. (_It returns a list even for single values._) |
+    | _Input_.Option_.**tryGetAsInt** | Returns an `int option` value from OptionValue, when Input _has_ option. (_It returns None when string value is not int._) |
+    | _Input_._Option_.**isValueSet** | Checks whether option has a value AND that value is _not empty_. |
 
     Note: All functions above will fail with an exception when given "option" is not defined.
 
@@ -412,6 +429,7 @@ dotnet path/to/console.dll help
         -q, --quiet           Do not output any message
         -V, --version         Display this application version
         -n, --no-interaction  Do not ask any interactive question
+            --no-progress     Whether to disable all progress bars
         -v|vv|vvv, --verbose  Increase the verbosity of messages
 
     Help
@@ -443,6 +461,7 @@ dotnet path/to/console.dll list
         -q, --quiet           Do not output any message
         -V, --version         Display this application version
         -n, --no-interaction  Do not ask any interactive question
+            --no-progress     Whether to disable all progress bars
         -v|vv|vvv, --verbose  Increase the verbosity of messages
 
     Help
@@ -454,23 +473,55 @@ dotnet path/to/console.dll list
 
             dotnet path/to/console.dll list test
 
+### About
+Show list of available commands.
+```sh
+dotnet path/to/console.dll list
+```
+
+    {application info}
+
+    Description:
+        Displays information about the current project.
+
+    Usage:
+        about [options]
+
+    Options:
+        -h, --help            Display this help message
+        -q, --quiet           Do not output any message
+        -V, --version         Display this application version
+        -n, --no-interaction  Do not ask any interactive question
+            --no-progress     Whether to disable all progress bars
+        -v|vv|vvv, --verbose  Increase the verbosity of messages
+
+    Help:
+        The about command displays information about the current project:
+
+            dotnet bin/Debug/net6.0/example.dll about about
+
+        There are multiple sections shown in the output:
+          - current project details/meta information
+          - environment
+          - console application library
+
 ### Create help message
 There are some placeholders which may help you to create a better help message.
 
 - `{{command.name}}` - The name of the current command.
 - `{{command.full_name}}` - The name of the current command including a relative path.
 
+**TIP**: You can use a `Help.lines` utility function to format your lines.
+
 This is a help, used in `list` command:
 ```fs
 Help =
-    [
-        "The <c:dark-green>{{command.name}}</c> command lists all commands:"
-        "        <c:dark-green>dotnet {{command.full_name}}</c>"
+    Help.lines [
+        "The <c:green>{{command.name}}</c> command lists all commands:"
+        "        <c:green>dotnet {{command.full_name}}</c>"
         "    You can also display the commands for a specific namespace:"
-        "        <c:dark-green>dotnet {{command.full_name}} test</c>"
+        "        <c:green>dotnet {{command.full_name}} test</c>"
     ]
-    |> String.concat "\n\n"
-    |> Some
 ```
 
 ## Tips

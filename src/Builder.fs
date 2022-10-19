@@ -13,9 +13,7 @@ type ApplicationInfo =
     | All
 
 type internal DefinitionParts = {
-    Name: ApplicationName
-    Version: ApplicationVersion option
-    Title: ApplicationTitle option
+    Meta: ApplicationMeta
     ApplicationInfo: ApplicationInfo
     ApplicationOptions: OptionsDefinitions
     Output: Output
@@ -30,9 +28,17 @@ module internal DefinitionParts =
     let defaults =
         let output = Output.defaults
         {
-            Name = ApplicationName (Name "Console Application")
-            Version = None
-            Title = None
+            Meta = {
+                Name = ApplicationName (Name "Console Application")
+                Version = None
+                Title = None
+                Description = None
+                GitRepository = None
+                GitBranch = None
+                GitCommit = None
+                CreatedAt = None
+                Meta = []
+            }
             ApplicationInfo = ApplicationInfo.Hidden
             ApplicationOptions = Commands.applicationOptions
             Output = output
@@ -68,39 +74,87 @@ type ConsoleApplicationBuilder<'r> internal (buildApplication: Definition -> 'r)
     let (<!>) state f =
         state >>= (f >> Ok)
 
-    member __.Yield (_): Definition =
+    let (>>*) (Definition state as definition) f: Definition =
+        match state with
+        | Ok parts ->
+            f parts
+            definition
+        | _ -> definition
+
+    member _.Yield (_): Definition =
         DefinitionParts.defaults
         |> Ok
         |> Definition
 
-    member __.Run (state) =
+    member _.Run (state) =
         buildApplication state
 
     [<CustomOperation("name")>]
-    member __.Name(state, name): Definition =
+    member _.Name(state, name): Definition =
         state >>= fun parts ->
             result {
                 let! name =
                     name
                     |> ApplicationName.create <@> ConsoleApplicationError.ApplicationNameError
 
-                return { parts with Name = name }
+                return { parts with Meta = { parts.Meta with Name = name }}
             }
 
     [<CustomOperation("version")>]
-    member __.Version(state, version): Definition =
-        state <!> fun parts -> { parts with Version = Some (ApplicationVersion version) }
+    member _.Version(state, version): Definition =
+        state <!> fun parts -> { parts with Meta = { parts.Meta with Version = Some (ApplicationVersion version) }}
 
     [<CustomOperation("title")>]
-    member __.Title(state, title): Definition =
-        state <!> fun parts -> { parts with Title = Some (ApplicationTitle title) }
+    member _.Title(state, title): Definition =
+        state <!> fun parts -> { parts with Meta = { parts.Meta with Title = Some (ApplicationTitle title) }}
+
+    [<CustomOperation("description")>]
+    member _.Description(state, description): Definition =
+        state <!> fun parts -> { parts with Meta = { parts.Meta with Description = Some description }}
+
+    /// Add a single line for an `about` command
+    [<CustomOperation("meta")>]
+    member _.Meta(state, (meta, value)): Definition =
+        state <!> fun parts -> { parts with Meta = { parts.Meta with Meta = [ meta; value ] :: parts.Meta.Meta }}
+
+    /// Add multiple meta lines for an `about` command
+    [<CustomOperation("meta")>]
+    member _.Meta(state, meta: (string * string) list): Definition =
+        state <!> fun parts -> { parts with Meta = { parts.Meta with Meta = (meta |> List.map (fun (meta, value) -> [ meta; value ]) |> List.rev) @ parts.Meta.Meta }}
+
+    [<CustomOperation("git")>]
+    member _.Git(state, (repository, branch, commit)): Definition =
+        state <!> fun parts ->
+            { parts with
+                Meta = {
+                    parts.Meta with
+                        GitRepository = repository
+                        GitBranch = branch
+                        GitCommit = commit
+                }
+            }
+
+    [<CustomOperation("git")>]
+    member this.Git(state, repository, branch, commit): Definition = this.Git(state, (Some repository, Some branch, Some commit))
+
+    [<CustomOperation("gitRepository")>]
+    member _.GitRepository(state, repository): Definition =
+        state <!> fun parts -> { parts with Meta = { parts.Meta with GitRepository = Some repository }}
+
+    [<CustomOperation("gitBranch")>]
+    member _.GitBranch(state, branch): Definition =
+        state <!> fun parts -> { parts with Meta = { parts.Meta with GitBranch = Some branch }}
+
+    [<CustomOperation("gitCommit")>]
+    member _.GitCommit(state, commit): Definition =
+        state <!> fun parts -> { parts with Meta = { parts.Meta with GitCommit = Some commit }}
 
     [<CustomOperation("info")>]
-    member __.Info(state, applicationInfo): Definition =
+    member _.Info(state, applicationInfo): Definition =
         state <!> fun parts -> { parts with ApplicationInfo = applicationInfo }
 
     [<CustomOperation("defaultCommand")>]
-    member __.DefaultCommand(state, defaultCommand): Definition =
+    member _.DefaultCommand(state, defaultCommand): Definition =
         state >>= fun parts ->
             result {
                 let! commandName =
@@ -116,11 +170,11 @@ type ConsoleApplicationBuilder<'r> internal (buildApplication: Definition -> 'r)
     /// <para>Complete is: [a|optionA OPTIONA] [b|optionB OPTIONB] ...</para>
     /// </summary>
     [<CustomOperation("showOptions")>]
-    member __.ShowOptions(state, decorationLevel): Definition =
+    member _.ShowOptions(state, decorationLevel): Definition =
         state <!> fun parts -> { parts with OptionDecorationLevel = decorationLevel }
 
     [<CustomOperation("command")>]
-    member __.Command(state, name, command): Definition =
+    member _.Command(state, name, command): Definition =
         state >>= fun parts ->
             result {
                 let! commandName =
@@ -135,28 +189,59 @@ type ConsoleApplicationBuilder<'r> internal (buildApplication: Definition -> 'r)
             }
 
     [<CustomOperation("useOutput")>]
-    member __.UseOutput(state, output): Definition =
+    member _.UseOutput(state, output): Definition =
         state <!> fun parts -> { parts with Output = output; Ask = output.Ask }
 
     [<CustomOperation("useAsk")>]
-    member __.UseAsk(state, ask): Definition =
+    member _.UseAsk(state, ask): Definition =
         state <!> fun parts -> { parts with Ask = ask }
+
+    [<CustomOperation("updateOutput")>]
+    member _.UpdateOutput(state, update: Output -> Output): Definition =
+        state <!> fun parts ->
+            let output = parts.Output |> update
+            { parts with Output = output; Ask = output.Ask }
+
+    /// This will override a style in the Output (ConsoleStyle), and even a custom tags, which are defined there.
+    [<CustomOperation("withStyle")>]
+    member _.WithStyle(state, style): Definition =
+        state >>* fun parts -> parts.Output.ChangeStyle style
+
+    [<CustomOperation("withCustomTags")>]
+    member _.WithCustomTags(state, customTags): Definition =
+        state >>* fun parts -> parts.Output.UpdateStyle (fun style ->
+            { style with CustomTags = style.CustomTags @ customTags }
+        )
+
+    [<CustomOperation("withCustomTags")>]
+    member _.WithCustomTags(state, customTags): Definition =
+        state >>= fun parts ->
+            result {
+                let! customTags =
+                    customTags
+                    |> Validation.ofResults
+                    <@> (CommandDefinitionError.InvalidCustomTags >> ConsoleApplicationError.CommandDefinitionError)
+
+                parts.Output.UpdateStyle (fun style ->
+                    { style with CustomTags = style.CustomTags @ customTags }
+                )
+
+                return parts
+            }
 
 [<RequireQualifiedAccess>]
 module internal ConsoleApplicationBuilder =
-    let buildApplication showHelpForCommand showError (Definition definition) =
+    let buildApplication showHelpForCommand (Definition definition) =
         definition <!> (fun parts ->
-            let showHelpForCommand =
-                showHelpForCommand parts.Output parts.OptionDecorationLevel parts.ApplicationOptions
-
-            let showError =
-                showError (ConsoleApplication definition)
+            let showHelpForCommand = showHelpForCommand parts.Output parts.OptionDecorationLevel parts.ApplicationOptions
+            let aboutCommand = Commands.aboutCommand parts.Meta
 
             let commands =
                 [
                     // dummy commands are here just as placeholder to be shown in the list, etc.
                     yield (CommandName (Name CommandNames.List), Commands.listCommandDummy)
                     yield (CommandName (Name CommandNames.Help), Commands.helpCommandDummy)
+                    yield (CommandName (Name CommandNames.About), aboutCommand)
 
                     yield! parts.Commands |> Map.toList
                 ]
@@ -165,7 +250,8 @@ module internal ConsoleApplicationBuilder =
             { parts with
                 Commands = commands
                     |> Commands.add CommandNames.List (Commands.listCommand parts.ApplicationOptions commands)
-                    |> Commands.add CommandNames.Help (Commands.helpCommand showHelpForCommand showError commands)
+                    |> Commands.add CommandNames.Help (Commands.helpCommand showHelpForCommand commands)
+                    |> Commands.add CommandNames.About aboutCommand
             }
         )
         |> ConsoleApplication

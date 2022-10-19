@@ -21,61 +21,61 @@ There are many ways how to access Arguments:
     ```fs
     let (argumentValue: ArgumentValue option) = // raw value could be null or None or empty list
         match input with
-        | Input.HasArgument "argumentName" argumentValue -> Some argumentValue
+        | Input.Argument.Has "argumentName" argumentValue -> Some argumentValue
         | _ -> None
 
     let (argumentValue: ArgumentValue option) = // raw value is neither null nor None nor empty list
         match input with
-        | Input.IsSetArgument "argumentName" argumentValue -> Some argumentValue
+        | Input.Argument.IsSet "argumentName" argumentValue -> Some argumentValue
         | _ -> None
 
     let (argumentValue: string option) =
         match input with
-        | Input.ArgumentValue "argumentName" value -> Some value
+        | Input.Argument.Value "argumentName" value -> Some value
         | _ -> None
 
     let (argumentValue: string list) =
         match input with
-        | Input.ArgumentListValue "argumentName" value -> value
+        | Input.Argument.ListValue "argumentName" value -> value
         | _ -> []
     ```
     - All Input active patterns for matching Arguments
 
     | Active Pattern                | Description |
     | ---                           | ---         |
-    | _Input_.**IsArgumentDefined** | Matched when given string is defined as argument name. |
-    | _Input_.**HasArgument**       | Matched when given string has any value in current Input (_default or from args_). |
-    | _Input_.**IsSetArgument**     | Matched when input _has_ argument AND that value is _not empty_. |
+    | _Input_._Argument_.**IsDefined** | Matched when given string is defined as argument name. |
+    | _Input_._Argument_.**Has**       | Matched when given string has any value in current Input (_default or from args_). |
+    | _Input_._Argument_.**IsSet**     | Matched when input _has_ argument AND that value is _not empty_. |
 
     - Active patterns for accessing a value
 
     | Active Pattern                    | Description | Value |
     | ---                               | ---         | ---   |
-    | _Input_.**ArgumentValue**         | Matched when input _has_ argument. (_Fail with exception when value is not set or it is a list._) | `string` |
-    | _Input_.**ArgumentOptionalValue** | Matched when input _has_ argument AND it has a single value. | `string` |
-    | _Input_.**ArgumentListValue**     | Matched when input _has_ argument. | `string list` |
+    | _Input_._Argument_.**Value**         | Matched when input _has_ argument. (_Fail with exception when value is not set or it is a list._) | `string` |
+    | _Input_._Argument_.**OptionalValue** | Matched when input _has_ argument AND it has a single value. | `string` |
+    | _Input_._Argument_.**ListValue**     | Matched when input _has_ argument. | `string list` |
 
 - Just get a value from `Input`
     ```fs
-    let argumentValue: ArgumentValue option = input |> Input.getArgument "argumentName"
-    let argumentValue: string = input |> Input.getArgumentValue "argumentName"    // or exception
-    let argumentValue: string option = input |> Input.getArgumentValueAsString "argumentName"
-    let argumentValue: int option = input |> Input.getArgumentValueAsInt "argumentName"   // or exception
-    let argumentValue: int option = input |> Input.tryGetArgumentValueAsInt "argumentName"
-    let argumentValue: string list = input |> Input.getArgumentValueAsList "argumentName"
+    let argumentValue: ArgumentValue option = input |> Input.Argument.get "argumentName"
+    let argumentValue: string = input |> Input.Argument.value "argumentName"    // or exception
+    let argumentValue: string option = input |> Input.Argument.asString "argumentName"
+    let argumentValue: int option = input |> Input.Argument.asInt "argumentName"   // or exception
+    let argumentValue: int option = input |> Input.tryAsInt "argumentName"
+    let argumentValue: string list = input |> Input.Argument.asList "argumentName"
     ```
     - All Input functions for accessing Arguments
 
     | Function                           | Description |
     | ---                                | ---         |
-    | _Input_.**tryGetArgument**           | Returns an `ArgumentValue option`, when Input _has_ argument. |
-    | _Input_.**getArgument**              | Returns an `ArgumentValue`, when Input _has_ argument OR fail with exception. |
-    | _Input_.**getArgumentValue**         | Returns a `string` value from ArgumentValue, when Input _has_ argument OR fail with exception. |
-    | _Input_.**getArgumentValueAsString** | Returns a `string option` value from ArgumentValue, when Input _has_ argument. |
-    | _Input_.**getArgumentValueAsInt**    | Returns an `int option` value from ArgumentValue, when Input _has_ argument. (_It fails with an exception when string value is not int._) |
-    | _Input_.**getArgumentValueAsList**   | Returns an `string list` value from ArgumentValue, when Input _has_ argument. (_It returns a list even for single values._) |
-    | _Input_.**tryGetArgumentValueAsInt** | Returns an `int option` value from ArgumentValue, when Input _has_ argument. (_It returns None when string value is not int._) |
-    | _Input_.**isArgumentValueSet**       | Checks whether argument has a value AND that value is _not empty_. |
+    | _Input_._Argument_.**tryGet**      | Returns an `ArgumentValue option`, when Input _has_ argument. |
+    | _Input_._Argument_.**get**         | Returns an `ArgumentValue`, when Input _has_ argument OR fail with exception. |
+    | _Input_._Argument_.**value**       | Returns a `string` value from ArgumentValue, when Input _has_ argument OR fail with exception. |
+    | _Input_._Argument_.**asString**    | Returns a `string option` value from ArgumentValue, when Input _has_ argument. |
+    | _Input_._Argument_.**asInt**       | Returns an `int option` value from ArgumentValue, when Input _has_ argument. (_It fails with an exception when string value is not int._) |
+    | _Input_._Argument_.**asList**      | Returns an `string list` value from ArgumentValue, when Input _has_ argument. (_It returns a list even for single values._) |
+    | _Input_._Argument_.**tryGetAsInt** | Returns an `int option` value from ArgumentValue, when Input _has_ argument. (_It returns None when string value is not int._) |
+    | _Input_._Argument_.**isValueSet**  | Checks whether argument has a value AND that value is _not empty_. |
 
     Note: All functions above will fail with an exception when given "argument" is not defined.
 

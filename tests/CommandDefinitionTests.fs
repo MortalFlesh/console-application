@@ -104,7 +104,7 @@ let provideArgumentDefinitions = seq {
             |> Error
     }
     yield {
-        Description = "Optional argument before required"
+        Description = "Optional argument before required - with array"
         Arguments = [
             Argument.required "mandatory" "Mandatory argument"
             Argument.optional "optional" "Optional argument" None
@@ -143,7 +143,7 @@ let provideOptionDefinitions = seq {
     yield {
         Description = "Option with empty name"
         Options = [
-            Option.required "" None "With empty name" (Some "default")
+            Option.required "" None "With empty name" "default"
         ]
         Argv = [| |]
         Expected =
@@ -427,7 +427,7 @@ let runConsoleApplicationWithCommandName commandNameDefinition commandNameRuntim
             Options = options
             Initialize = None
             Interact = None
-            Execute = fun _ -> ExitCode.Success
+            Execute = Execute (fun _ -> ExitCode.Success)
         }
 
         command "ambigous:command.name" {
@@ -437,7 +437,7 @@ let runConsoleApplicationWithCommandName commandNameDefinition commandNameRuntim
             Options = options
             Initialize = None
             Interact = None
-            Execute = fun _ -> failwith "Should not be called."
+            Execute = Execute (fun _ -> failwith "Should not be called.")
         }
     }
     |> runResult argv
@@ -448,36 +448,96 @@ let runConsoleApplication =
 [<Tests>]
 let defineCommandTests =
     testList "ConsoleApplication - define command" [
-        testCase "arguments" <| fun _ ->
+        yield!
             provideArgumentDefinitions
-            |> Seq.iter (fun { Arguments = arguments; Argv = argv; Expected = expected; Description = description } ->
-                let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
+            |> Seq.map (fun { Arguments = arguments; Argv = argv; Expected = expected; Description = description } ->
+                testCase $"arguments - {description}" <| fun _ ->
+                    let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
 
-                let result = runConsoleApplication arguments [] argv
-                let description = sprintf "%s\nResult:\n%A\n" description result
+                    let result = runConsoleApplication arguments [] argv
+                    let description = sprintf "%s\nResult:\n%A\n" description result
 
-                Expect.equal result expected description
+                    Expect.equal result expected description
             )
 
-        testCase "options" <| fun _ ->
+        yield!
             provideOptionDefinitions
-            |> Seq.iter (fun { Options = options; Argv = argv; Expected = expected; Description = description } ->
-                let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
+            |> Seq.map (fun { Options = options; Argv = argv; Expected = expected; Description = description } ->
+                testCase $"options - {description}" <| fun _ ->
+                    let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
 
-                let result = runConsoleApplication [] options argv
-                let description = sprintf "%s\nResult:\n%A\n" description result
+                    let result = runConsoleApplication [] options argv
+                    let description = sprintf "%s\nResult:\n%A\n" description result
 
-                Expect.equal result expected description
+                    Expect.equal result expected description
             )
 
-        testCase "commandNames" <| fun _ ->
+        yield!
             provideCommandName
-            |> Seq.iter (fun { CommandName = name; Argv = argv; Expected = expected; Description = description } ->
-                let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
+            |> Seq.map (fun { CommandName = name; Argv = argv; Expected = expected; Description = description } ->
+                testCase $"commandNames - {description}" <| fun _ ->
+                    let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
 
-                let result = runConsoleApplicationWithCommandName name None [] [] argv
-                let description = sprintf "%s\nResult:\n%A\n" description result
+                    let result = runConsoleApplicationWithCommandName name None [] [] argv
+                    let description = sprintf "%s\nResult:\n%A\n" description result
 
-                Expect.equal result expected description
+                    Expect.equal result expected description
             )
+
+        testCase "Test should just compile with all keywords" <| fun _ ->
+            let customTag: MF.ConsoleStyle.CustomTag = { Tag = MF.ConsoleStyle.TagName "tag"; Markup = MF.ConsoleStyle.MarkupString "<c:yellow>" }
+
+            use buffer = new MF.ConsoleStyle.Output.BufferOutput(MF.ConsoleStyle.Verbosity.Normal)
+            let console = MF.ConsoleStyle.ConsoleStyle(buffer)
+
+            let app =
+                consoleApplication {
+                    title "MF.ConsoleApplication"
+                    name "Example"
+                    version "1.0.0"
+                    info ApplicationInfo.NameAndVersion
+
+                    useOutput console
+
+                    withStyle MF.ConsoleStyle.Style.defaults
+                    withCustomTags [
+                        customTag
+                    ]
+                    withCustomTags [
+                        MF.ConsoleStyle.CustomTag.createAndParseMarkup (MF.ConsoleStyle.TagName "name") "<c:black|bg:cyan>"
+                    ]
+
+                    defaultCommand "run"
+
+                    command "run" {
+                        Description = "Test command."
+                        Help = None
+                        Arguments = []
+                        Options = []
+                        Initialize = None
+                        Interact = None
+                        Execute = Execute <| fun (input, output) ->
+                            output.Title("Command <name>%s</name> %s", "run", "is running")
+                            ExitCode.Success
+                    }
+                }
+                |> runResult [| |]
+
+            Expect.equal app (Ok ExitCode.Success) "Run command with most of the options"
+
+            let output =
+                (buffer.Fetch() |> console.RemoveMarkup).Split "\n"
+                |> List.ofArray
+
+            let expectedOutput =
+                [
+                    "Example <1.0.0>"
+                    "==============="
+                    ""
+                    "Command run is running"
+                    "======================"
+                    ""
+                    ""
+                ]
+            Expect.equal output expectedOutput "Command should run with buffer output."
     ]

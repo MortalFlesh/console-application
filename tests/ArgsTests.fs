@@ -564,7 +564,10 @@ let provideArgs = seq {
         Argv = [| "-cbWorld" |]
         Expected =
             expect
-                [ "cat", OptionValue.ValueOptional (Some "bWorld") ]
+                [
+                    "bar", OptionValue.ValueRequired ""
+                    "cat", OptionValue.ValueOptional (Some "bWorld")
+                ]
                 [ "arg", ArgumentValue.Optional None ]
     }
     yield {
@@ -586,6 +589,7 @@ let provideArgs = seq {
             expect
                 [
                     "foo", OptionValue.ValueNone
+                    "bar", OptionValue.ValueRequired ""
                     "cat", OptionValue.ValueOptional (Some "World")
                 ]
                 [ "arg", ArgumentValue.Optional None ]
@@ -608,7 +612,10 @@ let provideArgs = seq {
         Argv = [| "-ffffff" |]
         Expected =
             expect
-                [ "foo", OptionValue.ValueNone ]
+                [
+                    "foo", OptionValue.ValueNone
+                    "bar", OptionValue.ValueRequired ""
+                ]
                 [ "arg", ArgumentValue.Optional None ]
     }
 
@@ -648,7 +655,7 @@ let provideArgs = seq {
         Command = "one"
         Argv = [| "-V" |]
         Expected =
-            ConsoleApplicationError.ConsoleApplicationError "Input was not set in the command."
+            ConsoleApplicationError.ConsoleApplicationException Input.InputWasNotSetInTheCommandException
             |> ExpectedError
     }
     yield {
@@ -656,7 +663,7 @@ let provideArgs = seq {
         Command = "one"
         Argv = [| "--version" |]
         Expected =
-            ConsoleApplicationError.ConsoleApplicationError "Input was not set in the command."
+            ConsoleApplicationError.ConsoleApplicationException Input.InputWasNotSetInTheCommandException
             |> ExpectedError
     }
     yield {
@@ -704,6 +711,52 @@ let provideArgs = seq {
             "argumentList", ArgumentValue.Array []
         ]
     }
+
+    // Cases for a common scenarious
+    yield {
+        Description = "Use command 7 without any input"
+        Command = "seven"
+        Argv = [| |]
+        Expected = expect [
+            "api-url", OptionValue.ValueRequired "https://api"
+        ] [
+            "arg", ArgumentValue.Optional None
+        ]
+    }
+    yield {
+        Description = "Use command 7 with force and stdout as output"
+        Command = "seven"
+        Argv = [| "-fo" |]
+        Expected = expect [
+            "api-url", OptionValue.ValueRequired "https://api"
+            "force", OptionValue.ValueNone
+            "output", OptionValue.ValueOptional None
+        ] [
+            "arg", ArgumentValue.Optional None
+        ]
+    }
+    yield {
+        Description = "Use command 7 with output to the file and arg"
+        Command = "seven"
+        Argv = [| "-o"; "output.txt"; "arg" |]
+        Expected = expect [
+            "api-url", OptionValue.ValueRequired "https://api"
+            "output", OptionValue.ValueOptional (Some "output.txt")
+        ] [
+            "arg", ArgumentValue.Optional (Some "arg")
+        ]
+    }
+    yield {
+        Description = "Use command 7 with empty api-url option"
+        Command = "seven"
+        Argv = [| "--api-url"; "--"; "arg" |]
+        Expected =
+            OptionsError.RequiredValueNotSet "api-url"
+            |> InputError.OptionsError
+            |> ArgsError.InputError
+            |> ConsoleApplicationError.ArgsError
+            |> ExpectedError
+    }
 }
 
 let runConsoleApplication command argv =
@@ -726,6 +779,7 @@ let runConsoleApplication command argv =
             command "four" (commandFour setInput)
             command "five" (commandFive setInput)
             command "six" (commandSix setInput)
+            command "seven" (commandSeven setInput)
         }
         |> runResult argv
 
@@ -733,32 +787,33 @@ let runConsoleApplication command argv =
     |> Result.bind (fun _ ->
         match input with
         | Some input -> Ok input
-        | None -> Error (ConsoleApplicationError.ConsoleApplicationError "Input was not set in the command.")
+        | None -> Error (ConsoleApplicationError.ConsoleApplicationException Input.InputWasNotSetInTheCommandException)
     )
 
 [<Tests>]
 let parseArgsTests =
     testList "ConsoleApplication - parsing input" [
-        testCase "from console args" <| fun _ ->
+        yield!
             provideArgs
-            |> Seq.iter (fun { Command = command; Argv = argv; Expected = expected; Description = description } ->
-                let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
+            |> Seq.map (fun { Command = command; Argv = argv; Expected = expected; Description = description } ->
+                testCase $"from console args - {description}" <| fun _ ->
+                    let description = sprintf "args: %s\n%s" (argv |> String.concat " ") description
 
-                let expected =
-                    match expected with
-                    | Input expectedInput -> Input { expectedInput with Arguments = expectedInput.Arguments.Add("command", ArgumentValue.Required command)}
-                    | ExpectedError e -> ExpectedError e
+                    let expected =
+                        match expected with
+                        | Input expectedInput -> Input { expectedInput with Arguments = expectedInput.Arguments.Add("command", ArgumentValue.Required command)}
+                        | ExpectedError e -> ExpectedError e
 
-                let result = runConsoleApplication command argv
-                let description = sprintf "%s\nResult:\n%A\n" description (result |> Result.map (fun input -> { input with ArgumentDefinitions = []; OptionDefinitions = [] }))
+                    let result = runConsoleApplication command argv
+                    let description = sprintf "%s\nResult:\n%A\n" description (result |> Result.map (fun input -> { input with ArgumentDefinitions = []; OptionDefinitions = [] }))
 
-                match result, expected with
-                | Ok result, Input expected ->
-                    Expect.equal result.Options expected.Options description
-                    Expect.equal result.Arguments expected.Arguments description
-                | Error result, ExpectedError expected ->
-                    Expect.equal result expected description
-                | _ ->
-                    failtestf "Unexpected case ...\n%A" description
+                    match result, expected with
+                    | Ok result, Input expected ->
+                        Expect.equal result.Options expected.Options description
+                        Expect.equal result.Arguments expected.Arguments description
+                    | Error result, ExpectedError expected ->
+                        Expect.equal result expected description
+                    | _ ->
+                        failtestf "Unexpected case ...\n%A" description
             )
     ]
