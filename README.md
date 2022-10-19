@@ -55,7 +55,7 @@ let main argv =
             ]
             Initialize = None
             Interact = None
-            Execute = fun (input, output) ->
+            Execute = Execute <| fun (input, output) ->
                 let names =
                     let firstName = input |> Input.getArgumentValue "firstName"
 
@@ -193,6 +193,11 @@ Commands have three life-cycle functions that are invoked when running the comma
     - This _stage_ may be skipped by setting `--no-interaction` option.
 - `Execute` (required)
     - This method is executed after `initialize` and `interact`. It contains the logic you want the command to execute.
+    - It has multiple variants:
+        - `Execute`
+        - `ExecuteResult`
+        - `ExecuteAsync`
+        - `ExecuteAsyncResult`
 
 All life-cycle functions gets an `IO` (`Input * Output`).
 

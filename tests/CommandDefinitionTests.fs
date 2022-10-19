@@ -427,7 +427,7 @@ let runConsoleApplicationWithCommandName commandNameDefinition commandNameRuntim
             Options = options
             Initialize = None
             Interact = None
-            Execute = fun _ -> ExitCode.Success
+            Execute = Execute (fun _ -> ExitCode.Success)
         }
 
         command "ambigous:command.name" {
@@ -437,7 +437,7 @@ let runConsoleApplicationWithCommandName commandNameDefinition commandNameRuntim
             Options = options
             Initialize = None
             Interact = None
-            Execute = fun _ -> failwith "Should not be called."
+            Execute = Execute (fun _ -> failwith "Should not be called.")
         }
     }
     |> runResult argv
@@ -516,7 +516,7 @@ let defineCommandTests =
                         Options = []
                         Initialize = None
                         Interact = None
-                        Execute = fun (input, output) ->
+                        Execute = Execute <| fun (input, output) ->
                             output.Title("Command <name>%s</name> %s", "run", "is running")
                             ExitCode.Success
                     }

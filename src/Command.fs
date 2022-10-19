@@ -42,7 +42,19 @@ module internal Interact =
             | Input.Option.Has OptionNames.NoInteraction _ -> (input, output)
             | _ -> (input, output) |> IO.toInteractive ask |> interact
 
-type Execute = IO -> ExitCode
+type Execute =
+    | Execute of (IO -> ExitCode)
+    | ExecuteResult of (IO -> Result<ExitCode, ConsoleApplicationError>)
+    | ExecuteAsync of (IO -> Async<ExitCode>)
+    | ExecuteAsyncResult of (IO -> Async<Result<ExitCode, ConsoleApplicationError>>)
+
+[<RequireQualifiedAccess>]
+module internal Execute =
+    let run io = function
+        | Execute e -> e io |> AsyncResult.ofSuccess
+        | ExecuteResult e -> e io |> AsyncResult.ofResult
+        | ExecuteAsync e -> e io |> AsyncResult.ofAsyncCatch ConsoleApplicationError.ConsoleApplicationException
+        | ExecuteAsyncResult e -> e io
 
 type CommandDefinition = {
     Description: string
@@ -161,7 +173,7 @@ module internal Commands =
     let add name command (commands: Commands) =
         commands.Add (CommandName (Name name), command)
 
-    let helpCommand showHelpForCommand showError (commands: Commands): Command =
+    let helpCommand showHelpForCommand (commands: Commands): Command =
         CommandDefinition.validate {
             Description = "Displays help for a command"
             Help =
@@ -176,33 +188,30 @@ module internal Commands =
             Options = []
             Initialize = None
             Interact = None
-            Execute = fun (input, output) ->
+            Execute = ExecuteResult <| fun (input, output) ->
                 result {
                     let! rawCommandName =
                         input
                         |> Input.Argument.value "command_name"
                         |> CommandName.createInRuntime <@> ArgsError.CommandNameError
 
-                    return!
+                    let! (commandName, command) =
                         match commands |> find rawCommandName with
                         | ExactlyOne (commandName, command) -> Ok (commandName, command)
                         | MoreThanOne (givenName, names) -> Error (ArgsError.AmbigousCommandFound (givenName, names))
                         | NoCommand unknownName -> Error (ArgsError.CommandNotFound unknownName)
+
+                    showHelpForCommand commandName command
+
+                    return ExitCode.Success
                 }
                 <@> ConsoleApplicationError.ArgsError
-                |> function
-                    | Ok (commandName, command) ->
-                        showHelpForCommand commandName command
-                        ExitCode.Success
-                    | Error error ->
-                        showError error
-                        ExitCode.Error
         }
         |> Result.orFail
 
     let helpCommandDummy =
         let ignore2 _ = ignore
-        helpCommand ignore2 ignore Map.empty
+        helpCommand ignore2 Map.empty
 
     let aboutCommand (meta: ApplicationMeta) =
         CommandDefinition.validate {
@@ -225,7 +234,7 @@ module internal Commands =
             Options = []
             Initialize = None
             Interact = None
-            Execute = fun (input, output) ->
+            Execute = Execute <| fun (input, output) ->
                 let ``---`` =
                     [ String.replicate 21 "-"; String.replicate 100 "-" ] |> List.map (sprintf "<c:gray>%s</c>")
 
@@ -337,7 +346,7 @@ module internal Commands =
             Options = []
             Initialize = None
             Interact = None
-            Execute = fun (input, output) ->
+            Execute = Execute <| fun (input, output) ->
                 let showUsage () =
                     output.SimpleOptions "Usage:" [
                         [ "command [options] [--] [arguments]"; "" ]
@@ -385,5 +394,5 @@ module internal Commands =
             Options = []
             Initialize = None
             Interact = None
-            Execute = fun _ -> failwith "Exit command should not be executed."
+            Execute = Execute <| fun _ -> failwith "Exit command should not be executed."
         }

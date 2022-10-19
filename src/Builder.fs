@@ -231,11 +231,9 @@ type ConsoleApplicationBuilder<'r> internal (buildApplication: Definition -> 'r)
 
 [<RequireQualifiedAccess>]
 module internal ConsoleApplicationBuilder =
-    let buildApplication showHelpForCommand showError (Definition definition) =
+    let buildApplication showHelpForCommand (Definition definition) =
         definition <!> (fun parts ->
             let showHelpForCommand = showHelpForCommand parts.Output parts.OptionDecorationLevel parts.ApplicationOptions
-            let showError = showError (ConsoleApplication definition)
-
             let aboutCommand = Commands.aboutCommand parts.Meta
 
             let commands =
@@ -252,7 +250,7 @@ module internal ConsoleApplicationBuilder =
             { parts with
                 Commands = commands
                     |> Commands.add CommandNames.List (Commands.listCommand parts.ApplicationOptions commands)
-                    |> Commands.add CommandNames.Help (Commands.helpCommand showHelpForCommand showError commands)
+                    |> Commands.add CommandNames.Help (Commands.helpCommand showHelpForCommand commands)
                     |> Commands.add CommandNames.About aboutCommand
             }
         )

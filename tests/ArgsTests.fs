@@ -655,7 +655,7 @@ let provideArgs = seq {
         Command = "one"
         Argv = [| "-V" |]
         Expected =
-            ConsoleApplicationError.ConsoleApplicationError "Input was not set in the command."
+            ConsoleApplicationError.ConsoleApplicationException Input.InputWasNotSetInTheCommandException
             |> ExpectedError
     }
     yield {
@@ -663,7 +663,7 @@ let provideArgs = seq {
         Command = "one"
         Argv = [| "--version" |]
         Expected =
-            ConsoleApplicationError.ConsoleApplicationError "Input was not set in the command."
+            ConsoleApplicationError.ConsoleApplicationException Input.InputWasNotSetInTheCommandException
             |> ExpectedError
     }
     yield {
@@ -787,7 +787,7 @@ let runConsoleApplication command argv =
     |> Result.bind (fun _ ->
         match input with
         | Some input -> Ok input
-        | None -> Error (ConsoleApplicationError.ConsoleApplicationError "Input was not set in the command.")
+        | None -> Error (ConsoleApplicationError.ConsoleApplicationException Input.InputWasNotSetInTheCommandException)
     )
 
 [<Tests>]

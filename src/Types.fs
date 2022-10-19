@@ -451,13 +451,19 @@ type ConsoleApplicationError =
     | CommandNameError of CommandNameError
     | ApplicationNameError of ApplicationNameError
     | CommandDefinitionError of CommandDefinitionError
-    | ConsoleApplicationError of string
+    | ConsoleApplicationException of exn
 
 [<RequireQualifiedAccess>]
 module internal ConsoleApplicationError =
-    let format = function
+    let format showDetails = function
         | ConsoleApplicationError.ArgsError error -> [ ArgsError.format error ]
         | ConsoleApplicationError.CommandNameError error -> [ CommandNameError.format error ]
         | ConsoleApplicationError.ApplicationNameError error -> [ ApplicationNameError.format error ]
         | ConsoleApplicationError.CommandDefinitionError error -> CommandDefinitionError.format error
-        | ConsoleApplicationError.ConsoleApplicationError error -> [ error ]
+        | ConsoleApplicationError.ConsoleApplicationException error -> 
+            [ 
+                if showDetails then
+                    sprintf "%A" error
+                else 
+                    error.Message 
+            ]

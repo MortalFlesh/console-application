@@ -12,6 +12,8 @@ type ArgsHasOption = {
     ExpectedWithValue: OptionValue option
 }
 
+exception InputWasNotSetInTheCommandException
+
 let provideArgsHasOption = seq {
     //
     // cases without separator --
@@ -171,7 +173,7 @@ let runConsoleApplication argv =
 
     match input with
     | Some input -> input
-    | None -> failtest "Input was not set in the command."
+    | None -> raise InputWasNotSetInTheCommandException
 
 [<Tests>]
 let ``input should have options`` =

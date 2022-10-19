@@ -84,16 +84,20 @@ module internal Render =
         open MF.ConsoleStyle
         open OptionsOperators
 
+        let showForCommand parts (error, currentCommand) =
+            error
+            |> ConsoleApplicationError.format (parts.Output.IsVerbose())
+            |> List.iter parts.Output.Error
+
+            currentCommand
+            |>! Help.showSingleLine parts.Output parts.ApplicationOptions
+
         let show (ConsoleApplication application) currentCommand error =
             match application with
             | Ok parts ->
-                error
-                |> ConsoleApplicationError.format
-                |> List.iter parts.Output.Error
-
-                currentCommand
-                |>! Help.showSingleLine parts.Output parts.ApplicationOptions
+                (error, currentCommand)
+                |> showForCommand parts
             | Error e ->
                 e
-                |> ConsoleApplicationError.format
+                |> ConsoleApplicationError.format true
                 |> List.iter Output.defaults.Error

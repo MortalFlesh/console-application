@@ -24,7 +24,7 @@ let commandOne executeCallback: CommandDefinition =
 
             (input, output)
         )
-        Execute = fun (input, output) ->
+        Execute = Execute <| fun (input, output) ->
             executeCallback input
             ExitCode.Success
     }
@@ -43,7 +43,7 @@ let commandTwo executeCallback: CommandDefinition =
         ]
         Initialize = None
         Interact = None
-        Execute = fun (input, output) ->
+        Execute = Execute <| fun (input, output) ->
             executeCallback input
             ExitCode.Success
     }
@@ -62,7 +62,7 @@ let commandThree executeCallback: CommandDefinition =
         ]
         Initialize = None
         Interact = None
-        Execute = fun (input, output) ->
+        Execute = Execute <| fun (input, output) ->
             executeCallback input
             ExitCode.Success
     }
@@ -81,7 +81,7 @@ let commandFour executeCallback: CommandDefinition =
         ]
         Initialize = None
         Interact = None
-        Execute = fun (input, output) ->
+        Execute = Execute <| fun (input, output) ->
             executeCallback input
             ExitCode.Success
     }
@@ -103,7 +103,7 @@ let commandFive executeCallback: CommandDefinition =
 
             (input, output)
         )
-        Execute = fun (input, output) ->
+        Execute = Execute <| fun (input, output) ->
             executeCallback input
             ExitCode.Success
     }
@@ -122,7 +122,7 @@ let commandSix executeCallback: CommandDefinition =
         ]
         Initialize = None
         Interact = None
-        Execute = fun (input, output) ->
+        Execute = Execute <| fun (input, output) ->
             executeCallback input
             ExitCode.Success
     }
@@ -141,7 +141,7 @@ let commandSeven executeCallback: CommandDefinition =
         ]
         Initialize = None
         Interact = None
-        Execute = fun (input, output) ->
+        Execute = Execute <| fun (input, output) ->
             executeCallback input
             ExitCode.Success
     }

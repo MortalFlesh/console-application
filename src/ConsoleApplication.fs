@@ -8,8 +8,7 @@ module MFConsoleApplication =
     open MF.ErrorHandling.Result.Operators
 
     let consoleApplication =
-        let showError application = Error.show application None
-        let buildApplication = ConsoleApplicationBuilder.buildApplication Help.showForCommand showError
+        let buildApplication = ConsoleApplicationBuilder.buildApplication Help.showForCommand
 
         ConsoleApplicationBuilder (buildApplication)
 
@@ -53,6 +52,9 @@ module MFConsoleApplication =
     /// Map error by appending a current command.
     let private (<!!*>) result (currentCommand: CurrentCommand) =
         result <@> fun __ -> (__, currentCommand)
+
+    let private (<*!!*>) xResult (currentCommand: CurrentCommand) =
+        xResult |> AsyncResult.mapError (fun __ -> (__, currentCommand))
 
     /// Map error with appended current command.
     let private (<!!!>) result f =
@@ -121,12 +123,12 @@ module MFConsoleApplication =
                         return input, parsedInput.UnfilledArgumentDefinitions
                     }
 
-    let private runApplication (args: Args) (ConsoleApplication application): Result<ExitCode, ConsoleApplicationError * CurrentCommand> =
+    let runAsyncResult (args: Args) (ConsoleApplication application): AsyncResult<ExitCode, ConsoleApplicationError * CurrentCommand> =
         let currentCommand: CurrentCommand = None
 
         match application with
         | Ok parts ->
-            result {
+            asyncResult {
                 let output = parts.Output
 
                 match args with
@@ -200,18 +202,20 @@ module MFConsoleApplication =
                             input
                             |> Input.prepareUnfilledArguments unfilledArguments <@> (ArgsError.InputError >> ConsoleApplicationError.ArgsError) <!!*> currentCommand
 
-                        return
-                            (input, output)
-                            |> command.Execute
+                        return!
+                            command.Execute
+                            |> Execute.run (input, output) <*!!*> currentCommand
                     with
                     | e ->
-                        return! Error (ConsoleApplicationError.ConsoleApplicationError e.Message) <!!*> currentCommand
+                        return! Error (ConsoleApplicationError.ConsoleApplicationException e) <!!*> currentCommand
             }
-        | Error error -> Error (error, currentCommand)
+        | Error error -> AsyncResult.ofError (error, currentCommand)
 
-    let runResult args application =
-        application
-        |> runApplication args <@> fst
+    let private runApplication args =
+        runAsyncResult args >> Async.RunSynchronously
+
+    let runResult args =
+        runApplication args >@> fst
 
     let run args application =
         application
