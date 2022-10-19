@@ -476,7 +476,7 @@ dotnet path/to/console.dll list
 ### About
 Show list of available commands.
 ```sh
-dotnet path/to/console.dll list
+dotnet path/to/console.dll about
 ```
 
     {application info}
