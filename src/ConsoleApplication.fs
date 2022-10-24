@@ -202,6 +202,8 @@ module MFConsoleApplication =
                             input
                             |> Input.prepareUnfilledArguments unfilledArguments <@> (ArgsError.InputError >> ConsoleApplicationError.ArgsError) <!!*> currentCommand
 
+                        output.CreateProgressWith (fun message -> new Progress((input, output), message))
+
                         return!
                             command.Execute
                             |> Execute.run (input, output) <*!!*> currentCommand

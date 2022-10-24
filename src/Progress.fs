@@ -1,38 +1,49 @@
 namespace MF.ConsoleApplication
 
-module Progress =
-    open System
-    open MF.ConsoleStyle
+open System
+open MF.ConsoleStyle
 
-    type Progress (io: IO, name: string) =
-        let (input, output) = io
-        let mutable progressBar: ProgressBar option = None
+type internal Progress (io: IO, name: string) =
+    let (input, output) = io
+    let mutable progressBar: ProgressBar option = None
 
-        member private __.IsEnabled() =
-            let enableProgressBars =
-                match input with
-                | Input.Option.Has OptionNames.NoProgress _ -> false
-                | _ -> true
+    member _.IsAvailable() =
+        match input with
+        | Input.Option.Has OptionNames.NoProgress _ -> false
+        | _ -> true
 
-            enableProgressBars && (not <| output.IsDebug())
+    member this.Start(total: int) =
+        progressBar <-
+            if this.IsAvailable() then
+                if output.IsDebug()
+                then
+                    output.Message $"<c:dark-yellow>[Debug] Progress for \"{name}\" for (</c><c:magenta>{total}</c><c:dark-yellow>) is disabled</c>"
+                    None
+                else
+                    output.ProgressStartDefault(name, total)
+                    |> Some
+            else None
 
-        member this.Start(total: int) =
-            progressBar <-
-                if this.IsEnabled()
-                    then Some <| output.ProgressStart name total
-                    else
-                        output.Message $"<c:dark-yellow>[Debug] Progress for \"{name}\" for (</c><c:magenta>{total}</c><c:dark-yellow>) is disabled</c>"
-                        None
+    member _.Advance() =
+        progressBar |> Option.iter output.ProgressAdvance
+        if output.IsDebug() then output.Message $"  ├──> <c:gray>[Debug] Progress advanced</c>"
 
-        member __.Advance() =
-            progressBar |> Option.iter output.ProgressAdvance
-            if output.IsDebug() then output.Message $"  ├──> <c:gray>[Debug] Progress advanced</c>"
+    member _.Finish() =
+        if output.IsDebug() then output.Message $"  └──> <c:dark-yellow>[Debug] Progress finished</c>\n"
+        progressBar |> Option.iter output.ProgressFinish
+        progressBar <- None
 
-        member __.Finish() =
-            if output.IsDebug() then output.Message $"  └──> <c:dark-yellow>[Debug] Progress finished</c>"
-            progressBar |> Option.iter output.ProgressFinish
-            progressBar <- None
+    member _.SpawnChild(message, keep) =
+        match progressBar with
+        | Some progress -> progress.SpawnChild(message, keep)
+        | _ -> None
 
-        interface IDisposable with
-            member this.Dispose() =
-                this.Finish()
+    interface IProgress with
+        member this.Start(total) = this.Start(total)
+        member this.Advance() = this.Advance()
+        member this.Finish() = this.Finish()
+        member this.SpawnChild(message, keep) = this.SpawnChild(message, keep)
+        member this.IsAvailable() = this.IsAvailable()
+
+    interface IDisposable with
+        member this.Dispose() = this.Finish()
