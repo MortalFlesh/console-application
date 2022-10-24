@@ -129,7 +129,7 @@ let provideDefaultCommands = seq {
 
                 "                                                                                                          "
                 "  Default command test             .NET Core                 Git Branch            MF/ConsoleApplication  "
-                $"          1.0.0                      {dotnetVersion}                    <branch>              {version} ({createdAt})    "
+                $"          1.0.0                     {dotnetVersion}                    <branch>              {version} ({createdAt})    "
                 "                                                                                                          "
                 ""
                 "----------------------- ------------------------------------------------------------------------------------------------------"
