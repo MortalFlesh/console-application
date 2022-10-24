@@ -2,6 +2,8 @@
 
 <!-- There is always Unreleased section on the top. Subsections (Add, Changed, Fix, Removed) should be Add as needed. -->
 ## Unreleased
+
+## 4.1.0 - 2022-10-24
 - Use `ConsoleStyle` `4.2`
 - Fix `no-progress` option
 
