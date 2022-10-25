@@ -446,24 +446,36 @@ module internal ArgsError =
         | ArgsError.InputError error -> InputError.format error
 
 [<RequireQualifiedAccess>]
+type CommandError =
+    | Exception of exn
+    | Message of string
+    | Errors of CommandError list
+
+[<RequireQualifiedAccess>]
 type ConsoleApplicationError =
     | ArgsError of ArgsError
     | CommandNameError of CommandNameError
     | ApplicationNameError of ApplicationNameError
     | CommandDefinitionError of CommandDefinitionError
     | ConsoleApplicationException of exn
+    | CommandError of CommandError
 
 [<RequireQualifiedAccess>]
 module internal ConsoleApplicationError =
-    let format showDetails = function
+    let rec format showDetails = function
         | ConsoleApplicationError.ArgsError error -> [ ArgsError.format error ]
         | ConsoleApplicationError.CommandNameError error -> [ CommandNameError.format error ]
         | ConsoleApplicationError.ApplicationNameError error -> [ ApplicationNameError.format error ]
         | ConsoleApplicationError.CommandDefinitionError error -> CommandDefinitionError.format error
-        | ConsoleApplicationError.ConsoleApplicationException error -> 
-            [ 
+        | ConsoleApplicationError.ConsoleApplicationException error
+        | ConsoleApplicationError.CommandError (CommandError.Exception error) ->
+            [
                 if showDetails then
                     sprintf "%A" error
-                else 
-                    error.Message 
+                else
+                    error.Message
             ]
+        | ConsoleApplicationError.CommandError (CommandError.Message error) -> [ error ]
+        | ConsoleApplicationError.CommandError (CommandError.Errors errors) ->
+            errors
+            |> List.collect (ConsoleApplicationError.CommandError >> format showDetails)
