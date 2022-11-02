@@ -154,6 +154,7 @@ module internal Commands =
             OptionsDefinitions.version
             OptionsDefinitions.noInteraction
             OptionsDefinitions.noProgress
+            OptionsDefinitions.noAnsi
             OptionsDefinitions.verbose
         ]
 

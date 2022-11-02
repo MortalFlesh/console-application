@@ -135,8 +135,10 @@ module OptionNames =
     let NoInteraction = "no-interaction"
     [<Literal>]
     let NoProgress = "no-progress"
+    [<Literal>]
+    let NoAnsi = "no-ansi"
 
-    let internal reserved = [ Help; Quiet; Version; Verbose; NoInteraction; NoProgress ]
+    let internal reserved = [ Help; Quiet; Version; Verbose; NoInteraction; NoProgress; NoAnsi ]
 
 type ReservedShortcut = ReservedShortcut of shortcut: string * optionName: string
 

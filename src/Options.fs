@@ -278,6 +278,7 @@ module internal OptionsDefinitions =
     let quiet = Option.createApplicationOption OptionNames.Quiet OptionShortcuts.Quiet "Do not output any message" OptionValueDefinition.ValueNone
     let verbose = Option.createApplicationOption OptionNames.Verbose OptionShortcuts.Verbose "Increase the verbosity of messages" OptionValueDefinition.ValueNone
     let noProgress = Option.createApplicationOptionWithoutShortcut OptionNames.NoProgress "Whether to disable all progress bars" OptionValueDefinition.ValueNone
+    let noAnsi = Option.createApplicationOptionWithoutShortcut OptionNames.NoAnsi "Whether to disable all markup with ansi formatting" OptionValueDefinition.ValueNone
 
     let (|HasDefinedOption|_|) option (options: OptionsDefinitions) =
         options |> List.tryFind (Option.nameValue >> (=) option)

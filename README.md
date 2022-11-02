@@ -430,6 +430,7 @@ dotnet path/to/console.dll help
         -V, --version         Display this application version
         -n, --no-interaction  Do not ask any interactive question
             --no-progress     Whether to disable all progress bars
+            --no-ansi         Whether to disable all markup with ansi formatting
         -v|vv|vvv, --verbose  Increase the verbosity of messages
 
     Help
@@ -462,6 +463,7 @@ dotnet path/to/console.dll list
         -V, --version         Display this application version
         -n, --no-interaction  Do not ask any interactive question
             --no-progress     Whether to disable all progress bars
+            --no-ansi         Whether to disable all markup with ansi formatting
         -v|vv|vvv, --verbose  Increase the verbosity of messages
 
     Help
@@ -493,6 +495,7 @@ dotnet path/to/console.dll about
         -V, --version         Display this application version
         -n, --no-interaction  Do not ask any interactive question
             --no-progress     Whether to disable all progress bars
+            --no-ansi         Whether to disable all markup with ansi formatting
         -v|vv|vvv, --verbose  Increase the verbosity of messages
 
     Help:
