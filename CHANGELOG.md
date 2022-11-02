@@ -2,6 +2,7 @@
 
 <!-- There is always Unreleased section on the top. Subsections (Add, Changed, Fix, Removed) should be Add as needed. -->
 ## Unreleased
+- Add `no-ansi` option for all commands (`no-ansi` is also reserved key word now)
 
 ## 4.2.0 - 2022-10-25
 - Add `CommandError` and `ConsoleApplicationError.CommandError`

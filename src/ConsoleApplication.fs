@@ -132,6 +132,10 @@ module MFConsoleApplication =
                 let output = parts.Output
 
                 match args with
+                | Args.ContainsOption OptionsDefinitions.noAnsi -> output.ChangeOutput(Output.NoMarkup(output))
+                | _ -> ()
+
+                match args with
                 | Args.ContainsOption OptionsDefinitions.quiet -> output.Verbosity <- Verbosity.Quiet
                 | Args.HasOption OptionsDefinitions.verbose verbosity ->
                     output.Verbosity <-

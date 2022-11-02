@@ -521,12 +521,12 @@ let defineCommandTests =
                             ExitCode.Success
                     }
                 }
-                |> runResult [| |]
+                |> runResult [| "--no-ansi" |]
 
             Expect.equal app (Ok ExitCode.Success) "Run command with most of the options"
 
             let output =
-                (buffer.Fetch() |> console.RemoveMarkup).Split "\n"
+                buffer.Fetch().Split "\n"
                 |> List.ofArray
 
             let expectedOutput =
