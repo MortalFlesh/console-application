@@ -31,11 +31,11 @@ module internal NameError =
         | NameError.Contains (name, invalid) -> sprintf "%s \"%s\" name must not contains \"%s\"." prefix name invalid
         | NameError.EndsWith (name, invalid) -> sprintf "%s name \"%s\" must not ends with \"%s\"." prefix name invalid
 
-type ListWithItems<'a> = private ListWithItems of 'a list
+type ListWithItems<'Item> = private ListWithItems of 'Item list
 
-type NotEmptyList<'a> =
-    | WithItems of ListWithItems<'a>
-    | PartiallyCreated of 'a list
+type NotEmptyList<'Item> =
+    | WithItems of ListWithItems<'Item>
+    | PartiallyCreated of 'Item list
 
 [<RequireQualifiedAccess>]
 type NotEmptyListError =

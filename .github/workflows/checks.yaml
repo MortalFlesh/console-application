@@ -1,7 +1,10 @@
 name: Check
 
 on:
-    #push:
+    push:
+        branches:
+            - master
+            - main
     pull_request:
     schedule:
         -   cron: '0 3 * * *'
@@ -11,30 +14,32 @@ jobs:
         strategy:
             matrix:
                 os: [windows-latest, macos-latest, ubuntu-latest]
-                dotnet: [6.0.402]
+                dotnet: [7.0.100]
         runs-on: ${{ matrix.os }}
+        name: "Build on ${{ matrix.os }}"
 
         steps:
-            -   uses: actions/checkout@v2
+            -   uses: actions/checkout@v3
 
             -   name: Setup .NET Core
-                uses: actions/setup-dotnet@v1
+                uses: actions/setup-dotnet@v3
                 with:
                     dotnet-version: ${{ matrix.dotnet }}
 
-            -   name: Build library
+            -   name: Run build
                 run: ./build.sh
 
     tests:
         runs-on: macos-latest
+        name: "Check application"
 
         steps:
-            -   uses: actions/checkout@v2
+            -   uses: actions/checkout@v3
 
             -   name: Setup .NET Core
-                uses: actions/setup-dotnet@v1
+                uses: actions/setup-dotnet@v3
                 with:
-                    dotnet-version: 6.0.402
+                    dotnet-version: 7.0.100
 
             -   name: Run tests
                 run: ./build.sh -t tests
