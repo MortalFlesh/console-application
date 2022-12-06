@@ -2,6 +2,8 @@
 
 <!-- There is always Unreleased section on the top. Subsections (Add, Changed, Fix, Removed) should be Add as needed. -->
 ## Unreleased
+- [**BC**] Use net 7.0
+- Update dependencies
 
 ## 4.3.0 - 2022-11-02
 - Add `no-ansi` option for all commands (`no-ansi` is also reserved key word now)

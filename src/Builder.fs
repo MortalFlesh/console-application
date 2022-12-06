@@ -67,7 +67,7 @@ module internal ConsoleApplication =
         |> Result.toOption
         |> Option.map DefinitionParts.output
 
-type ConsoleApplicationBuilder<'r> internal (buildApplication: Definition -> 'r) =
+type ConsoleApplicationBuilder<'Application> internal (buildApplication: Definition -> 'Application) =
     let (>>=) (Definition definition) f =
         Definition (definition >>= f)
 
