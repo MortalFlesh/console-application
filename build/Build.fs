@@ -1,5 +1,5 @@
 // ========================================================================================================
-// === F# / Public Library fake build ============================================================= 3.1.0 =
+// === F# / Public Library fake build ============================================================= 3.2.0 =
 // --------------------------------------------------------------------------------------------------------
 // Options:
 //  - no-clean   - disables clean of dirs in the first step (required on CI)
@@ -109,21 +109,12 @@ let initTargets () =
     )
 
     Target.create "Lint" <| skipOn "no-lint" (fun _ ->
-        let lint project =
-            project
-            |> sprintf "fsharplint lint %s"
-            |> Dotnet.runInRoot
-            |> tee (function Ok _ -> Trace.tracefn "Lint %s is OK" project | _ -> ())
-
-        let errors =
-            ProjectSources.all
-            |> Seq.map lint
-            |> Seq.choose (function Error e -> Some e.Message | _ -> None)
-            |> Seq.toList
-
-        match errors with
-        | [] -> Trace.tracefn "Lint is OK!"
-        | errors -> errors |> String.concat "\n" |> failwithf "Lint ends with errors:\n%s"
+        ProjectSources.all
+        |> Seq.iter (fun fsproj ->
+            match Dotnet.runInRoot (sprintf "fsharplint lint %s" fsproj) with
+            | Ok () -> Trace.tracefn "Lint %s is Ok" fsproj
+            | Error e -> raise e
+        )
     )
 
     Target.create "Tests" (fun _ ->
