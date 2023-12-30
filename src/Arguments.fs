@@ -196,7 +196,7 @@ module internal ArgumentsDefinitions =
             | (argument: RawArgumentDefinition) :: arguments ->
                 match argument.Value with
                 | ArgumentValueDefinition.Array _
-                | ArgumentValueDefinition.RequiredArray _ ->
+                | ArgumentValueDefinition.RequiredArray ->
                     match arguments with
                     | [] -> Ok ()
                     | _ -> Error ArgumentDefinitionError.ArgumentAfterArrayArgument
@@ -206,8 +206,8 @@ module internal ArgumentsDefinitions =
             | [] -> Ok ()
             | (argument: RawArgumentDefinition) :: arguments ->
                 match argument.Value with
-                | ArgumentValueDefinition.Required _
-                | ArgumentValueDefinition.RequiredArray _ when hasOptional -> Error ArgumentDefinitionError.RequiredArgumentAfterOptional
+                | ArgumentValueDefinition.Required
+                | ArgumentValueDefinition.RequiredArray when hasOptional -> Error ArgumentDefinitionError.RequiredArgumentAfterOptional
                 | ArgumentValueDefinition.Optional _
                 | ArgumentValueDefinition.Array _ -> assertOptionalArgumentsAfterRequired true arguments
                 | _ -> assertOptionalArgumentsAfterRequired hasOptional arguments
