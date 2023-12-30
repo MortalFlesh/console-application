@@ -3,6 +3,7 @@ FSharp.Core
 group Build
     Fake.DotNet.Cli
     Fake.IO.FileSystem
+    Fake.IO.Zip
     Fake.Core.Target
     Fake.Core.UserInput
     Fake.DotNet.AssemblyInfoFile

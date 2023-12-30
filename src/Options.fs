@@ -79,7 +79,7 @@ module OptionValue =
             match value with
             | Some value -> value
             | _ -> failwithf "Option \"%s\" does not have a value." option
-        | OptionValue.ValueNone _ -> failwithf "Option \"%s\" has no value." option
+        | OptionValue.ValueNone -> failwithf "Option \"%s\" has no value." option
         | OptionValue.ValueIsArray _
         | OptionValue.ValueRequiredArray _ -> failwithf "Option \"%s\" has list value." option
 
@@ -103,7 +103,7 @@ module OptionValue =
     let listValue = function
         | OptionValue.ValueRequired value -> [value]
         | OptionValue.ValueOptional value -> value |> Option.toList
-        | OptionValue.ValueNone _ -> []
+        | OptionValue.ValueNone -> []
         | OptionValue.ValueIsArray list
         | OptionValue.ValueRequiredArray list -> list
 
