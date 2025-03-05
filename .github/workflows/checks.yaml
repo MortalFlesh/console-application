@@ -14,15 +14,15 @@ jobs:
         strategy:
             matrix:
                 os: [windows-latest, macos-latest, ubuntu-latest]
-                dotnet: [8.0.100]
+                dotnet: [9.0.200]
         runs-on: ${{ matrix.os }}
         name: "Build on ${{ matrix.os }}"
 
         steps:
-            -   uses: actions/checkout@v3
+            -   uses: actions/checkout@v4
 
             -   name: Setup .NET Core
-                uses: actions/setup-dotnet@v3
+                uses: actions/setup-dotnet@v4
                 with:
                     dotnet-version: ${{ matrix.dotnet }}
 
@@ -34,12 +34,14 @@ jobs:
         name: "Check application"
 
         steps:
-            -   uses: actions/checkout@v3
+            -   uses: actions/checkout@v4
 
             -   name: Setup .NET Core
-                uses: actions/setup-dotnet@v3
+                uses: actions/setup-dotnet@v4
                 with:
-                    dotnet-version: 8.0.100
+                    dotnet-version: 9.x
 
             -   name: Run tests
+                env:
+                    DOTNET_ROLL_FORWARD: latestMajor
                 run: ./build.sh -t tests
