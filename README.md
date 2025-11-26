@@ -1,8 +1,11 @@
 Console Application
 ===================
 
-[![NuGet Version and Downloads count](https://buildstats.info/nuget/MF.ConsoleApplication)](https://www.nuget.org/packages/MF.ConsoleApplication)
-[![Check](https://github.com/MortalFlesh/console-application/actions/workflows/checks.yaml/badge.svg)](https://github.com/MortalFlesh/console-application/actions/workflows/checks.yaml)
+---
+
+Repository moved to [FeatherTools/console-application](https://github.com/FeatherTools/console-application)
+
+---
 
 > The Console application eases the creation of beautiful and testable command line interfaces in F#.
 
